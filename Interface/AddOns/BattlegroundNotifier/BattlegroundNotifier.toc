@@ -1,0 +1,7 @@
+## Interface: 11304
+## Title: Battleground Taskbar Notifier
+## Notes: Highlights the WoW window when a Battleground queue is ready
+## Author: Olafski
+## Version: 4-classic
+embeds.xml
+BattlegroundNotifier.lua

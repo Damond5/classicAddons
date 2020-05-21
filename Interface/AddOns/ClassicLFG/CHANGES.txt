@@ -1,0 +1,10 @@
+lightweight tag e048e9e1654d202f301e2459f7f4cc76f435a88a 1.2.3
+Author:	Domenik Irrgang <domenikirrgang@gmail.com>
+Date:	Fri Apr 24 01:42:30 2020 +0200
+
+commit e048e9e1654d202f301e2459f7f4cc76f435a88a
+Author: Domenik Irrgang <domenikirrgang@gmail.com>
+Date:   Fri Apr 24 01:42:30 2020 +0200
+
+    fixed offline message for now
+
