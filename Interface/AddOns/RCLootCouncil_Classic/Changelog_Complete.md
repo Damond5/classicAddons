@@ -1,3 +1,76 @@
+# v0.11.0
+## Changes
+### Comms
+Comms are now limited to a max of 10 per second in an attempt to fix the remaining comms issues. This change is fully backwards compatible.
+
+### Ahn'Qiraj
+Added Imperial Qiraji and scarab items to the round robin list.
+
+## Bugfixes
+*Druids will now autopass polearms.*
+*Fixed 'lootQueue nil' errors. (CurseClassic #105, #106)*
+
+
+# v0.10.1
+*Note: Just a reminder that this is not compatible with pre v0.10 versions.*
+
+## Upgraded to RCLootCouncil v2.19.2
+### Changes
+#### Council comms
+Council comms is now throttled to avoid sending unnecessary comms.
+
+### Bugfixes
+*Bumped threshold for detecting ML awards for instability in Classic.*
+*Increased stability of ML/GL detection.*
+*Suppressed and logged occasional `lootQueue` error for future inspection.*
+
+## Changes
+### Comms
+Removed errors when receiving messages from pre v0.10 versions.
+Pre v0.10 version will again show up in the Version Checker instead of `Not Installed`.
+
+## Bugfixes
+*Syncing (/rc sync) is now also compressed.*
+*Sessions will no longer error out if candidates hadn't cached the items.*
+
+
+# v0.10.0
+## Changes
+### Comms
+Due to recent changes from Blizzard side, all comms in WoW are now much more restricted. I've had an update for this in mind for a long time, but they decided to just do an undocumented edit, which limits my options.
+
+This update should be compatible with the new limits, but at the cost of backwards compatibility - i.e. any pre v0.10 version of the addon no longer works with v0.10 and up.
+
+### Sync
+Syncing history will most likely not be working due to the changes stated above, unless your history is very small. For various reasons I won't do a fix for that anytime soon, but remember you can always do `Player Export` and import that in the history, which does the same as the sync does.
+
+## Additions
+### Auto Award Reputation Items
+Added a new auto award section for reputation items. These currently includes Coins and Bijous from Zul'Gurub.
+They can be auto awarded two ways:
+1. To a specified player, just as the other auto awards.
+2. In a round robin fashion, in which all players will get one before anyone getting a second.
+
+Note that the Master Looter will still have to loot the mobs in either case.
+
+### Group Loot
+Added support for usage with group loot.
+The group leader must enable this in the `Usage Options`.
+When enabled, the group leader is treated as the Master Looter for all intents and purposes.
+The group leader will still need to loot all mobs to have items added to a session, but doesn't need to keep the loot list open to award items.
+**Note:** This addition only facilitates the use of RCLootCouncil with group loot, but does nothing to circumvent the limitations of said loot method.
+
+
+# v0.9.3
+## Bugfixes
+*Fixed issues on 'LootOpened' introduced in the last version (Curse#64,Curse#65,Curse#66).*
+
+# v0.9.2
+## Bugfixes
+*Fixed desync issue when ML reloaded in groups (#21, Curse#61, Curse#62).*
+*Fixed issue with occasional "Unknown" Master Looter (Curse#60).*
+*Detecting 'Award Later' items after a /reload should be more reliable.*
+
 # v0.9.1
 ## Updated RCLootCouncil to v2.19.1
 ### Changes

@@ -9,10 +9,11 @@
 
 --Lua functions
 local _G = _G
-local unpack = unpack
+local unpack, select = unpack, select
 local format, gsub, type = format, gsub, type
 --WoW API / Variables
 local CreateFrame = CreateFrame
+local InCombatLockdown = InCombatLockdown
 local GetAddOnEnableState = GetAddOnEnableState
 local GetAddOnMetadata = GetAddOnMetadata
 local GetLocale = GetLocale
@@ -23,6 +24,7 @@ local IsAddOnLoaded = IsAddOnLoaded
 local DisableAddOn = DisableAddOn
 local ReloadUI = ReloadUI
 
+local MAINMENU_BUTTON = MAINMENU_BUTTON
 local GameMenuButtonAddons = GameMenuButtonAddons
 local GameMenuButtonLogout = GameMenuButtonLogout
 local GameMenuFrame = GameMenuFrame
@@ -140,6 +142,7 @@ do
 	DisableAddOn("ElvUI_EverySecondCounts")
 	DisableAddOn("ElvUI_AuraBarsMovers")
 	DisableAddOn("ElvUI_CustomTweaks")
+	DisableAddOn("ElvUI_DTBars2")
 end
 
 function E:OnEnable()
@@ -159,31 +162,21 @@ function E:OnInitialize()
 	E.global = E:CopyTable({}, E.DF.global)
 	E.private = E:CopyTable({}, E.privateVars.profile)
 
-	local ElvDB = ElvDB
 	if ElvDB then
 		if ElvDB.global then
 			E:CopyTable(E.global, ElvDB.global)
 		end
 
-		local profileKey
-		if ElvDB.profileKeys then
-			profileKey = ElvDB.profileKeys[E.mynameRealm]
-		end
-
-		if profileKey and ElvDB.profiles and ElvDB.profiles[profileKey] then
-			E:CopyTable(E.db, ElvDB.profiles[profileKey])
+		local key = ElvDB.profileKeys and ElvDB.profileKeys[E.mynameRealm]
+		if key and ElvDB.profiles and ElvDB.profiles[key] then
+			E:CopyTable(E.db, ElvDB.profiles[key])
 		end
 	end
 
-	local ElvPrivateDB = ElvPrivateDB
 	if ElvPrivateDB then
-		local profileKey
-		if ElvPrivateDB.profileKeys then
-			profileKey = ElvPrivateDB.profileKeys[E.mynameRealm]
-		end
-
-		if profileKey and ElvPrivateDB.profiles and ElvPrivateDB.profiles[profileKey] then
-			E:CopyTable(E.private, ElvPrivateDB.profiles[profileKey])
+		local key = ElvPrivateDB.profileKeys and ElvPrivateDB.profileKeys[E.mynameRealm]
+		if key and ElvPrivateDB.profiles and ElvPrivateDB.profiles[key] then
+			E:CopyTable(E.private, ElvPrivateDB.profiles[key])
 		end
 	end
 
@@ -207,7 +200,12 @@ function E:OnInitialize()
 	end
 
 	local GameMenuButton = CreateFrame('Button', nil, GameMenuFrame, 'GameMenuButtonTemplate')
-	GameMenuButton:SetScript('OnClick', function() E:ToggleOptionsUI() HideUIPanel(GameMenuFrame) end)
+	GameMenuButton:SetScript('OnClick', function()
+		E:ToggleOptionsUI() --We already prevent it from opening in combat
+		if not InCombatLockdown() then
+			HideUIPanel(GameMenuFrame)
+		end
+	end)
 	GameMenuFrame[E.name] = GameMenuButton
 
 	if not IsAddOnLoaded('ConsolePortUI_Menu') then -- #390
@@ -243,21 +241,17 @@ function E:PositionGameMenuButton()
 end
 
 function E:ResetProfile()
-	local profileKey
-
-	local ElvPrivateDB = ElvPrivateDB
-	if ElvPrivateDB.profileKeys then
-		profileKey = ElvPrivateDB.profileKeys[E.mynameRealm]
-	end
-
-	if profileKey and ElvPrivateDB.profiles and ElvPrivateDB.profiles[profileKey] then
-		ElvPrivateDB.profiles[profileKey] = nil
-	end
-
-	ElvCharacterDB = nil
-	ReloadUI()
+	E:StaggeredUpdateAll()
 end
 
 function E:OnProfileReset()
 	E:StaticPopup_Show('RESET_PROFILE_PROMPT')
+end
+
+function E:ResetPrivateProfile()
+	ReloadUI()
+end
+
+function E:OnPrivateProfileReset()
+	E:StaticPopup_Show('RESET_PRIVATE_PROFILE_PROMPT')
 end

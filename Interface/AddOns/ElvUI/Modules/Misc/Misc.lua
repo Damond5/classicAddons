@@ -31,6 +31,8 @@ local LeaveParty = LeaveParty
 local RaidNotice_AddMessage = RaidNotice_AddMessage
 local RepairAllItems = RepairAllItems
 local SendChatMessage = SendChatMessage
+local StaticPopup_Hide = StaticPopup_Hide
+local StaticPopupSpecial_Hide = StaticPopupSpecial_Hide
 local UninviteUnit = UninviteUnit
 local UnitExists = UnitExists
 local UnitGUID = UnitGUID
@@ -43,9 +45,10 @@ local ExpandAllFactionHeaders = ExpandAllFactionHeaders
 local GetNumFactions = GetNumFactions
 local GetFactionInfo = GetFactionInfo
 local SetWatchedFactionIndex = SetWatchedFactionIndex
+local GetCurrentCombatTextEventInfo = GetCurrentCombatTextEventInfo
 
+local GetCurrentCombatTextEventInfo = GetCurrentCombatTextEventInfo
 local CombatLogGetCurrentEventInfo = CombatLogGetCurrentEventInfo
-local LE_GAME_ERR_GUILD_NOT_ENOUGH_MONEY = LE_GAME_ERR_GUILD_NOT_ENOUGH_MONEY
 local LE_GAME_ERR_NOT_ENOUGH_MONEY = LE_GAME_ERR_NOT_ENOUGH_MONEY
 local MAX_PARTY_MEMBERS = MAX_PARTY_MEMBERS
 local UNKNOWN = UNKNOWN
@@ -85,10 +88,11 @@ function M:COMBAT_LOG_EVENT_UNFILTERED()
 	end
 end
 
-function M:COMBAT_TEXT_UPDATE(_, messagetype, faction)
+function M:COMBAT_TEXT_UPDATE(_, messagetype)
 	if not E.db.general.autoTrackReputation then return end
 
 	if messagetype == 'FACTION' then
+		local faction = GetCurrentCombatTextEventInfo()
 		if faction ~= 'Guild' and faction ~= GetWatchedFactionInfo() then
 			ExpandAllFactionHeaders()
 

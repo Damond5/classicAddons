@@ -1,3 +1,21 @@
+### 1.13.60
+
+- Fixed issue with buffs sometimes not registering
+- Moonfire now correctly stacks
+
+### 1.13.59
+
+- ToC Update
+- Fire Vulnerability is refreshed from anyone's scorch even if they don't have a talent
+
+### 1.13.58
+
+- Fire Vulnerability stack now work together with Ignite stacks
+
+### 1.13.57
+
+- Ignite refresh workaround
+
 ### 1.13.56
 
 - LCD Update

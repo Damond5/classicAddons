@@ -5,6 +5,7 @@ local LDB = E.Libs.LDB
 local LSM = E.Libs.LSM
 
 local _G = _G
+local tostring = tostring
 local tinsert, wipe, sort, type, error, pcall = tinsert, wipe, sort, type, error, pcall
 local ipairs, pairs, next, strlen, strfind = ipairs, pairs, next, strlen, strfind
 local CloseDropDownMenus = CloseDropDownMenus
@@ -19,8 +20,9 @@ local UnregisterStateDriver = UnregisterStateDriver
 local MISCELLANEOUS = MISCELLANEOUS
 
 local ActivateHyperMode
-local SelectedDatatext
 local HyperList = {}
+
+DT.SelectedDatatext = nil
 DT.HyperList = HyperList
 DT.RegisteredPanels = {}
 DT.RegisteredDataTexts = {}
@@ -54,31 +56,13 @@ end
 --> [HyperDT Credits] <--
 --> Original Work: NihilisticPandemonium
 --> Modified by Azilroka! :)
-local menuFrame = CreateFrame('Frame', 'ElvUI_HyperDTMenuFrame', E.UIParent, 'UIDropDownMenuTemplate')
-DT.HyperDTMenuFrame = menuFrame
-menuFrame:SetClampedToScreen(true)
-menuFrame:EnableMouse(true)
-menuFrame.MenuSetItem = function(dt, value)
-	DT.db.panels[dt.parentName][dt.pointIndex] = value
-	DT:UpdatePanelInfo(dt.parentName, dt.parent)
-
-	if ActivateHyperMode then
-		DT:EnableHyperMode(dt.parent)
-	end
-
-	SelectedDatatext = nil
-	CloseDropDownMenus()
-end
-menuFrame.MenuGetItem = function(dt, value)
-	return dt and (DT.db.panels[dt.parentName] and DT.db.panels[dt.parentName][dt.pointIndex] == value)
-end
 
 function DT:SingleHyperMode(_, key, active)
-	if SelectedDatatext and (key == 'LALT' or key == 'RALT') then
-		if active == 1 and MouseIsOver(SelectedDatatext) then
+	if DT.SelectedDatatext and (key == 'LALT' or key == 'RALT') then
+		if active == 1 and MouseIsOver(DT.SelectedDatatext) then
 			DT:OnLeave()
-			DT:SetEasyMenuAnchor(menuFrame, SelectedDatatext)
-			EasyMenu(HyperList, menuFrame, nil, nil, nil, 'MENU')
+			DT:SetEasyMenuAnchor(DT.EasyMenu, DT.SelectedDatatext)
+			EasyMenu(HyperList, DT.EasyMenu, nil, nil, nil, 'MENU')
 		elseif _G.DropDownList1:IsShown() and not _G.DropDownList1:IsMouseOver() then
 			CloseDropDownMenus()
 		end
@@ -86,9 +70,9 @@ function DT:SingleHyperMode(_, key, active)
 end
 
 function DT:HyperClick()
-	SelectedDatatext = self
-	DT:SetEasyMenuAnchor(menuFrame, SelectedDatatext)
-	EasyMenu(HyperList, menuFrame, nil, nil, nil, 'MENU')
+	DT.SelectedDatatext = self
+	DT:SetEasyMenuAnchor(DT.EasyMenu, DT.SelectedDatatext)
+	EasyMenu(HyperList, DT.EasyMenu, nil, nil, nil, 'MENU')
 end
 
 function DT:EnableHyperMode(Panel)
@@ -117,7 +101,7 @@ function DT:OnEnter()
 	if E.db.datatexts.noCombatHover and InCombatLockdown() then return end
 
 	if self.parent then
-		SelectedDatatext = self
+		DT.SelectedDatatext = self
 	end
 
 	if self.MouseEnters then
@@ -215,9 +199,7 @@ function DT:BuildPanelFrame(name, db, initLoad)
 	local Panel = DT:FetchFrame(name)
 	Panel:ClearAllPoints()
 	Panel:Point('CENTER')
-	Panel:Size(db.width or 100, db.height or 10)
-	Panel:SetScript('OnEnter', DT.OnEnter)
-	Panel:SetScript('OnLeave', DT.OnLeave)
+	Panel:Size(db.width, db.height)
 
 	local MoverName = 'DTPanel'..name..'Mover'
 	Panel.moverName = MoverName
@@ -317,7 +299,7 @@ end
 function DT:SetupTooltip(panel)
 	local parent = panel:GetParent()
 	DT.tooltip:Hide()
-	DT.tooltip:SetOwner(parent, parent.anchor, parent.xOff, parent.yOff)
+	DT.tooltip:SetOwner(panel, parent.anchor, parent.xOff, parent.yOff)
 	DT.tooltip:ClearLines()
 
 	if not _G.GameTooltip:IsForbidden() then
@@ -335,6 +317,11 @@ function DT:RegisterPanel(panel, numPoints, anchor, xOff, yOff, vertical)
 	end
 
 	DT.RegisteredPanels[name] = panel
+
+	panel:SetScript('OnEnter', DT.OnEnter)
+	panel:SetScript('OnLeave', DT.OnLeave)
+	panel:SetScript('OnSizeChanged', DT.PanelSizeChanged)
+
 	panel.dataPanels = panel.dataPanels or {}
 	panel.numPoints = numPoints
 	panel.xOff = xOff
@@ -354,6 +341,8 @@ function DT:Panel_DefaultGlobalSettings(name)
 end
 
 function DT:AssignPanelToDataText(dt, data, event, ...)
+	dt.name = data.name or '' -- This is needed for Custom Currencies
+
 	if data.events then
 		for _, ev in pairs(data.events) do
 			if data.eventFunc then
@@ -454,7 +443,8 @@ function DT:UpdatePanelInfo(panelName, panel, ...)
 			dt.text = text
 
 			local overlay = dt:CreateTexture(nil, 'OVERLAY')
-			overlay:SetColorTexture(0.3, 0.9, 0.3, .3)
+			overlay:SetTexture(E.media.blankTex)
+			overlay:SetVertexColor(0.3, 0.9, 0.3, .3)
 			overlay:SetAllPoints()
 			dt.overlay = overlay
 
@@ -486,6 +476,8 @@ function DT:UpdatePanelInfo(panelName, panel, ...)
 		dt.parentName = panelName
 		dt.battleStats = battlePanel
 		dt.db = db
+
+		E:StopFlash(dt)
 
 		if dt.objectEvent and dt.objectEventFunc then
 			E:UnregisterAllEventsForObject(dt.objectEvent, dt.objectEventFunc)
@@ -553,7 +545,6 @@ function DT:UpdatePanelAttributes(name, db)
 	Panel:Size(db.width, db.height)
 	Panel:SetFrameStrata(db.frameStrata)
 	Panel:SetFrameLevel(db.frameLevel)
-	Panel:SetScript('OnSizeChanged', DT.PanelSizeChanged)
 
 	E:UIFrameFadeIn(Panel, 0.2, Panel:GetAlpha(), db.mouseover and 0 or 1)
 
@@ -576,7 +567,7 @@ function DT:UpdatePanelAttributes(name, db)
 	end
 end
 
-local function GetMenuListCategory(category)
+function DT:GetMenuListCategory(category)
 	for i, info in ipairs(HyperList) do
 		if info.text == category then
 			return i
@@ -584,10 +575,10 @@ local function GetMenuListCategory(category)
 	end
 end
 
-local function SortMenuList(list)
+function DT:SortMenuList(list)
 	for _, menu in pairs(list) do
 		if menu.menuList then
-			SortMenuList(menu.menuList)
+			DT:SortMenuList(menu.menuList)
 		end
 	end
 
@@ -606,17 +597,17 @@ end
 
 function DT:RegisterHyperDT()
 	for name, info in pairs(DT.RegisteredDataTexts) do
-		local category = GetMenuListCategory(info.category or MISCELLANEOUS)
+		local category = DT:GetMenuListCategory(info.category or MISCELLANEOUS)
 		if not category then
 			category = #HyperList + 1
 			tinsert(HyperList, { text = info.category or MISCELLANEOUS, notCheckable = true, hasArrow = true, menuList = {} } )
 		end
 
-		tinsert(HyperList[category].menuList, { text = info.localizedName or name, checked = function() return menuFrame.MenuGetItem(SelectedDatatext, name) end, func = function() menuFrame.MenuSetItem(SelectedDatatext, name) end })
+		tinsert(HyperList[category].menuList, { text = info.localizedName or name, checked = function() return DT.EasyMenu.MenuGetItem(DT.SelectedDatatext, name) end, func = function() DT.EasyMenu.MenuSetItem(DT.SelectedDatatext, name) end })
 	end
 
-	SortMenuList(HyperList)
-	tinsert(HyperList, { text = L["NONE"], checked = function() return menuFrame.MenuGetItem(SelectedDatatext, '') end, func = function() menuFrame.MenuSetItem(SelectedDatatext, '') end })
+	DT:SortMenuList(HyperList)
+	tinsert(HyperList, { text = L["NONE"], checked = function() return DT.EasyMenu.MenuGetItem(DT.SelectedDatatext, '') end, func = function() DT.EasyMenu.MenuSetItem(DT.SelectedDatatext, '') end })
 
 	DT:RegisterEvent('MODIFIER_STATE_CHANGED', 'SingleHyperMode')
 end
@@ -625,15 +616,34 @@ function DT:Initialize()
 	DT.Initialized = true
 	DT.db = E.db.datatexts
 
-	DT.tooltip = CreateFrame('GameTooltip', 'DatatextTooltip', E.UIParent, 'GameTooltipTemplate')
+	DT.tooltip = CreateFrame('GameTooltip', 'DataTextTooltip', E.UIParent, 'GameTooltipTemplate')
+	DT.EasyMenu = CreateFrame("Frame", "DataTextEasyMenu", E.UIParent, "UIDropDownMenuTemplate")
+	DT.HyperDTMenuFrame = DT.EasyMenu
+	DT.EasyMenu:SetClampedToScreen(true)
+	DT.EasyMenu:EnableMouse(true)
+	DT.EasyMenu.MenuSetItem = function(dt, value)
+		DT.db.panels[dt.parentName][dt.pointIndex] = value
+		DT:UpdatePanelInfo(dt.parentName, dt.parent)
+
+		if ActivateHyperMode then
+			DT:EnableHyperMode(dt.parent)
+		end
+
+		DT.SelectedDatatext = nil
+		CloseDropDownMenus()
+	end
+	DT.EasyMenu.MenuGetItem = function(dt, value)
+		return dt and (DT.db.panels[dt.parentName] and DT.db.panels[dt.parentName][dt.pointIndex] == value)
+	end
+
 	TT:HookScript(DT.tooltip, 'OnShow', 'SetStyle')
 
 	-- Ignore header font size on DatatextTooltip
 	local font = E.Libs.LSM:Fetch('font', E.db.tooltip.font)
 	local fontOutline = E.db.tooltip.fontOutline
 	local textSize = E.db.tooltip.textFontSize
-	_G.DatatextTooltipTextLeft1:FontTemplate(font, textSize, fontOutline)
-	_G.DatatextTooltipTextRight1:FontTemplate(font, textSize, fontOutline)
+	_G.DataTextTooltipTextLeft1:FontTemplate(font, textSize, fontOutline)
+	_G.DataTextTooltipTextRight1:FontTemplate(font, textSize, fontOutline)
 
 	LDB.RegisterCallback(E, 'LibDataBroker_DataObjectCreated', DT.SetupObjectLDB)
 	DT:RegisterLDB() -- LibDataBroker
@@ -648,6 +658,7 @@ function DT:Initialize()
 	end
 
 	DT:RegisterEvent('PLAYER_ENTERING_WORLD', 'LoadDataTexts')
+
 	DT:RegisterHyperDT()
 end
 

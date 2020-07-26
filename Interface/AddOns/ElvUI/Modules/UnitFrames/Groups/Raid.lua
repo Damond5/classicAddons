@@ -4,9 +4,7 @@ local _, ns = ...
 local ElvUF = ns.oUF
 assert(ElvUF, "ElvUI was unable to locate oUF.")
 
---Lua functions
 local _G = _G
---WoW API / Variables
 local CreateFrame = CreateFrame
 -- GLOBALS: ElvUF_Raid
 
@@ -30,7 +28,7 @@ function UF:Construct_RaidFrames()
 	self.AuraWatch = UF:Construct_AuraWatch(self)
 	self.customTexts = {}
 	self.Cutaway = UF:Construct_Cutaway(self)
-	self.DebuffHighlight = UF:Construct_DebuffHighlight(self)
+	self.AuraHighlight = UF:Construct_AuraHighlight(self)
 	self.Fader = UF:Construct_Fader()
 	self.HealthPrediction = UF:Construct_HealComm(self)
 	self.MouseGlow = UF:Construct_MouseGlow(self)
@@ -48,9 +46,6 @@ function UF:Construct_RaidFrames()
 
 	self.unitframeType = "raid"
 
-	UF:Update_StatusBars()
-	UF:Update_FontStrings()
-
 	return self
 end
 
@@ -60,7 +55,7 @@ function UF:Update_RaidHeader(header, db)
 
 	if not parent.positioned then
 		parent:ClearAllPoints()
-		parent:Point("BOTTOMLEFT", E.UIParent, "BOTTOMLEFT", 4, 195)
+		parent:Point("BOTTOMLEFT", E.UIParent, "BOTTOMLEFT", 4, 248)
 		E:CreateMover(parent, parent:GetName()..'Mover', L["Raid Frames"], nil, nil, nil, 'ALL,RAID', nil, 'unitframe,groupUnits,raid,generalGroup')
 		parent.positioned = true
 	end
@@ -127,7 +122,7 @@ function UF:Update_RaidFrames(frame, db)
 	UF:Configure_AuraWatch(frame)
 	UF:Configure_CustomTexts(frame)
 	UF:Configure_Cutaway(frame)
-	UF:Configure_DebuffHighlight(frame)
+	UF:Configure_AuraHighlight(frame)
 	UF:Configure_Fader(frame)
 	UF:Configure_HealComm(frame)
 	UF:Configure_PhaseIcon(frame)

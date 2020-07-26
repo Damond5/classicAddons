@@ -3,7 +3,7 @@ local E, L, V, P, G = unpack(select(2, ...)) --Import: Engine, Locales, PrivateD
 --Global Settings
 G.general = {
 	UIScale = 0.64,
-	version = 1.24,
+	version = 1.27,
 	locale = E:GetLocale(),
 	eyefinity = false,
 	smallerWorldMap = true,
@@ -18,8 +18,8 @@ G.general = {
 		yOffset = 0
 	},
 	AceGUI = {
-		width = 1000,
-		height = 720
+		width = 960,
+		height = 730
 	},
 	disableTutorialButtons = true,
 	showMissingTalentAlert = false,
@@ -105,7 +105,6 @@ G.profileCopy = {
 		barPet = true,
 		stanceBar = true,
 		microbar = true,
-		extraActionButton = true,
 		cooldown = true
 	},
 	auras = {

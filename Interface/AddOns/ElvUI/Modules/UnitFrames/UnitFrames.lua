@@ -5,15 +5,14 @@ UF.LSM = E.Libs.LSM
 
 --Lua functions
 local _G = _G
-local select, pairs, type, unpack, assert, tostring = select, pairs, type, unpack, assert, tostring
-local min, tinsert, strsub = min, tinsert, strsub
+local select, type, unpack, assert, tostring = select, type, unpack, assert, tostring
+local min, pairs, ipairs, tinsert, strsub = min, pairs, ipairs, tinsert, strsub
 local strfind, gsub, format = strfind, gsub, format
 --WoW API / Variables
 local CompactRaidFrameManager_SetSetting = CompactRaidFrameManager_SetSetting
 local CreateFrame = CreateFrame
 local GetInstanceInfo = GetInstanceInfo
 local hooksecurefunc = hooksecurefunc
-local InCombatLockdown = InCombatLockdown
 local IsReplacingUnit = IsReplacingUnit
 local RegisterStateDriver = RegisterStateDriver
 local UnitExists = UnitExists
@@ -21,7 +20,6 @@ local UnitIsEnemy = UnitIsEnemy
 local UnitIsFriend = UnitIsFriend
 local UnitFrame_OnEnter = UnitFrame_OnEnter
 local UnitFrame_OnLeave = UnitFrame_OnLeave
-local UnregisterAttributeDriver = UnregisterAttributeDriver
 local UnregisterStateDriver = UnregisterStateDriver
 local PlaySound = PlaySound
 
@@ -30,7 +28,7 @@ local SOUNDKIT_IG_CREATURE_AGGRO_SELECT = SOUNDKIT.IG_CREATURE_AGGRO_SELECT
 local SOUNDKIT_IG_CHARACTER_NPC_SELECT = SOUNDKIT.IG_CHARACTER_NPC_SELECT
 local SOUNDKIT_IG_CREATURE_NEUTRAL_SELECT = SOUNDKIT.IG_CREATURE_NEUTRAL_SELECT
 local SOUNDKIT_INTERFACE_SOUND_LOST_TARGET_UNIT = SOUNDKIT.INTERFACE_SOUND_LOST_TARGET_UNIT
-local PlaySound = PlaySound
+-- GLOBALS: ElvUF_Parent
 
 local hiddenParent = CreateFrame("Frame", nil, _G.UIParent)
 hiddenParent:SetAllPoints()
@@ -422,7 +420,6 @@ function UF:Configure_Fader(frame)
 		frame.Fader:SetOption('Hover', frame.db.fader.hover)
 		frame.Fader:SetOption('Combat', frame.db.fader.combat)
 		frame.Fader:SetOption('PlayerTarget', frame.db.fader.playertarget)
-		frame.Fader:SetOption('Focus', frame.db.fader.focus)
 		frame.Fader:SetOption('Health', frame.db.fader.health)
 		frame.Fader:SetOption('Power', frame.db.fader.power)
 		frame.Fader:SetOption('Casting', frame.db.fader.casting)
@@ -451,39 +448,35 @@ function UF:Configure_FontString(obj)
 end
 
 function UF:Update_AllFrames()
-	if E.private.unitframe.enable ~= true then return; end
+	if not E.private.unitframe.enable then return end
 	UF:UpdateColors()
 	UF:Update_FontStrings()
 	UF:Update_StatusBars()
 
 	for unit in pairs(UF.units) do
-		if UF.db.units[unit] then
-			if UF.db.units[unit].enable then
-				UF[unit]:Update()
-				UF[unit]:Enable()
-				E:EnableMover(UF[unit].mover:GetName())
-			else
-				UF[unit]:Update()
-				UF[unit]:Disable()
-				E:DisableMover(UF[unit].mover:GetName())
-			end
+		if UF.db.units[unit].enable then
+			UF[unit]:Update()
+			UF[unit]:Enable()
+			E:EnableMover(UF[unit].mover:GetName())
+		else
+			UF[unit]:Update()
+			UF[unit]:Disable()
+			E:DisableMover(UF[unit].mover:GetName())
 		end
 	end
 
 	for unit, group in pairs(UF.groupunits) do
-		if UF.db.units[group] then
-			if UF.db.units[group].enable then
-				UF[unit]:Enable()
-				UF[unit]:Update()
-				E:EnableMover(UF[unit].mover:GetName())
-			else
-				UF[unit]:Disable()
-				E:DisableMover(UF[unit].mover:GetName())
-			end
+		if UF.db.units[group].enable then
+			UF[unit]:Enable()
+			UF[unit]:Update()
+			E:EnableMover(UF[unit].mover:GetName())
+		else
+			UF[unit]:Disable()
+			E:DisableMover(UF[unit].mover:GetName())
 		end
 
-		if self[unit].isForced then
-			self:ForceShow(self[unit])
+		if UF[unit].isForced then
+			UF:ForceShow(UF[unit])
 		end
 	end
 
@@ -570,7 +563,7 @@ function UF.groupPrototype:Configure_Groups(Header)
 	local verticalSpacing = db.verticalSpacing
 
 	local numGroups = Header.numGroups
-	for i=1, numGroups do
+	for i = 1, numGroups do
 		local group = Header.groups[i]
 
 		if group then
@@ -661,21 +654,17 @@ function UF.groupPrototype:Configure_Groups(Header)
 		end
 	end
 
-	if not Header.isInstanceForced then
-		Header.dirtyWidth = width - horizontalSpacing -groupSpacing
-		Header.dirtyHeight = height - verticalSpacing -groupSpacing
-	end
-
-	Header:Size(width - horizontalSpacing -groupSpacing, height - verticalSpacing -groupSpacing)
+	Header:Size(width - horizontalSpacing - groupSpacing, height - verticalSpacing - groupSpacing)
 end
 
 function UF.groupPrototype:Update(Header)
 	local group = Header.groupName
 
 	UF[group].db = UF.db.units[group]
-	for i=1, #Header.groups do
-		Header.groups[i].db = UF.db.units[group]
-		Header.groups[i]:Update()
+
+	for _, Group in ipairs(Header.groups) do
+		Group.db = UF.db.units[group]
+		Group:Update()
 	end
 end
 
@@ -849,8 +838,8 @@ function UF:GetSmartVisibilitySetting(setting, group, smart, db)
 end
 
 function UF:CreateAndUpdateHeaderGroup(group, groupFilter, template, headerTemplate, smart, skip)
-	local db = self.db.units[group]
-	local Header = self[group]
+	local db = UF.db.units[group]
+	local Header = UF[group]
 
 	local numGroups = UF:GetSmartVisibilitySetting('numGroups', group, smart, db)
 	local visibility = UF:GetSmartVisibilitySetting('visibility', group, smart, db)
@@ -908,10 +897,10 @@ function UF:CreateAndUpdateHeaderGroup(group, groupFilter, template, headerTempl
 		if not UF.headerFunctions[group].Update then
 			UF.headerFunctions[group].Update = function()
 				local func = UF["Update_"..name.."Frames"]
-				UF["Update_"..name.."Header"](UF, Header, db)
+				UF["Update_"..name.."Header"](UF, Header, Header.db)
 
 				for i = 1, Header:GetNumChildren() do
-					Header:UpdateChild(func, select(i, Header:GetChildren()), db)
+					Header:UpdateChild(func, select(i, Header:GetChildren()), Header.db)
 				end
 			end
 		end
@@ -1091,9 +1080,6 @@ function ElvUF:DisableBlizzard(unit)
 	elseif (unit == 'target') and E.private.unitframe.disabledBlizzardFrames.target then
 		HandleFrame(_G.TargetFrame)
 		HandleFrame(_G.ComboFrame)
-	elseif (unit == 'focus') and E.private.unitframe.disabledBlizzardFrames.focus then
-		HandleFrame(_G.FocusFrame)
-		HandleFrame(_G.TargetofFocusFrame)
 	elseif (unit == 'targettarget') and E.private.unitframe.disabledBlizzardFrames.target then
 		HandleFrame(_G.TargetFrameToT)
 	elseif (unit:match('party%d?$')) and E.private.unitframe.disabledBlizzardFrames.party then
@@ -1138,59 +1124,97 @@ function UF:ToggleForceShowGroupFrames(unitGroup, numGroup)
 	end
 end
 
-local ignoreSettings = {
-	['position'] = true,
-	['priority'] = true,
+local Blacklist = {
+	arena = {
+		enable = true,
+		fader = true,
+	},
+	assist = {
+		enable = true,
+		fader = true,
+	},
+	boss = {
+		enable = true,
+		fader = true,
+	},
+	focus = {
+		enable = true,
+		fader = true,
+	},
+	focustarget = {
+		enable = true,
+		fader = true,
+	},
+	party = {
+		enable = true,
+		visibility = true,
+		fader = true,
+	},
+	pet = {
+		enable = true,
+		fader = true,
+	},
+	pettarget = {
+		enable = true,
+		fader = true,
+	},
+	player = {
+		enable = true,
+		aurabars = true,
+		fader = true,
+		buffs = {
+			priority = true,
+			minDuration = true,
+			maxDuration = true,
+		},
+		debuffs = {
+			priority = true,
+			minDuration = true,
+			maxDuration = true,
+		},
+	},
+	raid = {
+		enable = true,
+		fader = true,
+		visibility = true,
+	},
+	raid40 = {
+		enable = true,
+		fader = true,
+		visibility = true,
+	},
+	raidpet = {
+		enable = true,
+		fader = true,
+		visibility = true,
+	},
+	tank = {
+		fader = true,
+		enable = true,
+	},
+	target = {
+		fader = true,
+		enable = true,
+	},
+	targettarget = {
+		fader = true,
+		enable = true,
+	},
+	targettargettarget = {
+		fader = true,
+		enable = true,
+	},
 }
 
-local ignoreSettingsGroup = {
-	['visibility'] = true,
-}
-
-local allowPass = {
-	['sizeOverride'] = true,
-}
-
-function UF:MergeUnitSettings(fromUnit, toUnit, isGroupUnit)
-	local db = self.db.units
-	local filter = ignoreSettings
-	if isGroupUnit then
-		filter = ignoreSettingsGroup
-	end
-	if fromUnit ~= toUnit then
-		for option, value in pairs(db[fromUnit]) do
-			if type(value) ~= 'table' and not filter[option] then
-				if db[toUnit][option] ~= nil then
-					db[toUnit][option] = value
-				end
-			elseif not filter[option] then
-				if type(value) == 'table' then
-					for opt, val in pairs(db[fromUnit][option]) do
-						--local val = db[fromUnit][option][opt]
-						if type(val) ~= 'table' and not filter[opt] then
-							if db[toUnit][option] ~= nil and (db[toUnit][option][opt] ~= nil or allowPass[opt]) then
-								db[toUnit][option][opt] = val
-							end
-						elseif not filter[opt] then
-							if type(val) == 'table' then
-								for o, v in pairs(db[fromUnit][option][opt]) do
-									if not filter[o] then
-										if db[toUnit][option] ~= nil and db[toUnit][option][opt] ~= nil and db[toUnit][option][opt][o] ~= nil then
-											db[toUnit][option][opt][o] = v
-										end
-									end
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-	else
+function UF:MergeUnitSettings(from, to)
+	if from == to then
 		E:Print(L["You cannot copy settings from the same unit."])
+		return
 	end
 
-	self:Update_AllFrames()
+	E:CopyTable(UF.db.units[to], E:FilterTableFromBlacklist(UF.db.units[from], Blacklist[to]))
+
+	UF:Update_AllFrames()
 end
 
 function UF:UpdateBackdropTextureColor(r, g, b)
@@ -1329,6 +1353,18 @@ function UF:PLAYER_TARGET_CHANGED()
 	end
 end
 
+function UF:AfterStyleCallback()
+	-- this will wait until after ouf pushes `EnableElement` onto the newly spawned frames
+	-- calling an update onto assist or tank in the styleFunc is before the `EnableElement`
+	-- that would cause the auras to be shown when a new frame is spawned (tank2, assist2)
+	-- even when they are disabled. this makes sure the update happens after so its proper.
+	if self.unitframeType == "tank" or self.unitframeType == "tanktarget" then
+		UF:Update_TankFrames(self, E.db.unitframe.units.tank)
+	elseif self.unitframeType == "assist" or self.unitframeType == "assisttarget" then
+		UF:Update_AssistFrames(self, E.db.unitframe.units.assist)
+	end
+end
+
 function UF:Initialize()
 	UF.db = E.db.unitframe
 	UF.thinBorders = UF.db.thinBorders or E.PixelMode
@@ -1340,6 +1376,7 @@ function UF:Initialize()
 	RegisterStateDriver(E.ElvUF_Parent, "visibility", "[petbattle] hide; show")
 
 	UF:UpdateColors()
+	ElvUF:RegisterInitCallback(UF.AfterStyleCallback)
 	ElvUF:RegisterStyle('ElvUF', function(frame, unit)
 		UF:Construct_UF(frame, unit)
 	end)

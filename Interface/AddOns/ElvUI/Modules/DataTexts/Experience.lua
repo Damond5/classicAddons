@@ -3,13 +3,11 @@ local DT = E:GetModule('DataTexts')
 
 local _G = _G
 local format = format
-
 local UnitXP, UnitXPMax = UnitXP, UnitXPMax
 local GetXPExhaustion = GetXPExhaustion
 local GetExpansionLevel = GetExpansionLevel
 local MAX_PLAYER_LEVEL_TABLE = MAX_PLAYER_LEVEL_TABLE
 local displayString = ""
-local hexColor
 
 local function OnEvent(self, event)
 	if E.mylevel == MAX_PLAYER_LEVEL_TABLE[GetExpansionLevel()] then

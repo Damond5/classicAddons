@@ -3,6 +3,7 @@ local M = E:GetModule('Minimap')
 
 --Lua functions
 local _G = _G
+local unpack = unpack
 local utf8sub = string.utf8sub
 --WoW API / Variables
 local CloseAllWindows = CloseAllWindows
@@ -36,7 +37,7 @@ local menuList = {
 	{text = _G.CHAT_CHANNELS,
 	func = ToggleChannelFrame},
 	{text = _G.TIMEMANAGER_TITLE,
-	func = function() TimeManager_Toggle() end},
+	func = function() _G.TimeManager_Toggle() end},
 	{text = _G.SOCIAL_BUTTON,
 	func = ToggleFriendsFrame},
 	{text = _G.GUILD,

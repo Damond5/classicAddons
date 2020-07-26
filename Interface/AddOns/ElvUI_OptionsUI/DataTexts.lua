@@ -4,8 +4,10 @@ local DT = E:GetModule('DataTexts')
 local Layout = E:GetModule('Layout')
 local Chat = E:GetModule('Chat')
 local Minimap = E:GetModule('Minimap')
+local ACH = E.Libs.ACH
 
 local _G = _G
+local wipe = wipe
 local tonumber = tonumber
 local tostring = tostring
 local format = format
@@ -14,16 +16,15 @@ local type = type
 
 -- GLOBALS: AceGUIWidgetLSMlists
 
-local datatexts = {}
 local DTPanelOptions = {
 	numPoints = {
-		order = 1,
+		order = 2,
 		type = 'range',
 		name = L["Number of DataTexts"],
 		min = 1, max = 20, step = 1,
 	},
 	growth = {
-		order = 2,
+		order = 3,
 		type = 'select',
 		name = L["Growth"],
 		values = {
@@ -32,19 +33,19 @@ local DTPanelOptions = {
 		},
 	},
 	width = {
-		order = 3,
+		order = 4,
 		type = 'range',
 		name = L["Width"],
 		min = 24, max = E.screenwidth, step = 1,
 	},
 	height = {
-		order = 4,
+		order = 5,
 		type = 'range',
 		name = L["Height"],
 		min = 12, max = E.screenheight, step = 1,
 	},
 	templateGroup = {
-		order = 5,
+		order = 10,
 		type = "multiselect",
 		name = L['Template'],
 		sortByValue = true,
@@ -56,7 +57,7 @@ local DTPanelOptions = {
 		},
 	},
 	strataAndLevel = {
-		order = 9,
+		order = 15,
 		type = "group",
 		name = L["Strata and Level"],
 		guiInline = true,
@@ -83,7 +84,7 @@ local DTPanelOptions = {
 		},
 	},
 	tooltip = {
-		order = 15,
+		order = 20,
 		type = "group",
 		name = L["Tooltip"],
 		guiInline = true,
@@ -92,6 +93,7 @@ local DTPanelOptions = {
 				order = 2,
 				type = "select",
 				name = L["Anchor"],
+				width = 'double',
 				values = {
 					ANCHOR_TOP = L["ANCHOR_TOP"],
 					ANCHOR_RIGHT = L["ANCHOR_RIGHT"],
@@ -122,24 +124,23 @@ local DTPanelOptions = {
 	},
 	visibility = {
 		type = 'input',
-		order = 16,
+		order = 25,
 		name = L["Visibility State"],
 		desc = L["This works like a macro, you can run different situations to get the actionbar to show/hide differently.\n Example: '[combat] show;hide'"],
 		width = 'full',
 	},
 }
 
-local PanelLayoutOptions -- so PanelGroup_Create and PanelLayoutOptions can call each other locally
-local function PanelGroup_Delete(panel)
-	E.Options.args.datatexts.args.panels.args[panel] = nil
-end
-
 local function ColorizeName(name, color)
 	return format('|cFF%s%s|r', color or 'ffd100', name)
 end
 
+local function PanelGroup_Delete(panel)
+	E.Options.args.datatexts.args.panels.args[panel] = nil
+end
+
 local function PanelGroup_Create(panel)
-	E.Options.args.datatexts.args.panels.args[panel] = {
+	local opts = {
 		type = 'group',
 		name = ColorizeName(panel),
 		get = function(info) return E.db.datatexts.panels[panel][info[#info]] end,
@@ -162,7 +163,7 @@ local function PanelGroup_Create(panel)
 				set = function(info, value)
 					E.global.datatexts.customPanels[panel][info[#info]] = value
 					DT:UpdatePanelAttributes(panel, E.global.datatexts.customPanels[panel])
-					PanelLayoutOptions()
+					DT:PanelLayoutOptions()
 				end,
 				args = {
 					delete = {
@@ -176,7 +177,7 @@ local function PanelGroup_Create(panel)
 							E.global.datatexts.customPanels[panel] = nil
 							DT:ReleasePanel(panel)
 							PanelGroup_Delete(panel)
-							PanelLayoutOptions()
+							DT:PanelLayoutOptions()
 							E.Libs.AceConfigDialog:SelectGroup('ElvUI', 'datatexts', 'panels', 'newPanel')
 						end,
 					},
@@ -228,18 +229,20 @@ local function PanelGroup_Create(panel)
 		},
 	}
 
-	E:CopyTable(E.Options.args.datatexts.args.panels.args[panel].args.panelOptions.args, DTPanelOptions)
-	E.Options.args.datatexts.args.panels.args[panel].args.panelOptions.args.tooltip.args.tooltipYOffset.disabled = function() return E.global.datatexts.customPanels[panel].tooltipAnchor == 'ANCHOR_CURSOR' end
-	E.Options.args.datatexts.args.panels.args[panel].args.panelOptions.args.tooltip.args.tooltipXOffset.disabled = function() return E.global.datatexts.customPanels[panel].tooltipAnchor == 'ANCHOR_CURSOR' end
-	E.Options.args.datatexts.args.panels.args[panel].args.panelOptions.args.templateGroup.get = function(info, key) return E.global.datatexts.customPanels[panel][key] end
-	E.Options.args.datatexts.args.panels.args[panel].args.panelOptions.args.templateGroup.set = function(info, key, value) E.global.datatexts.customPanels[panel][key] = value; DT:UpdatePanelAttributes(panel, E.global.datatexts.customPanels[panel]) end
+	local panelOpts = E:CopyTable(opts.args.panelOptions.args, DTPanelOptions)
+	panelOpts.tooltip.args.tooltipYOffset.disabled = function() return E.global.datatexts.customPanels[panel].tooltipAnchor == 'ANCHOR_CURSOR' end
+	panelOpts.tooltip.args.tooltipXOffset.disabled = function() return E.global.datatexts.customPanels[panel].tooltipAnchor == 'ANCHOR_CURSOR' end
+	panelOpts.templateGroup.get = function(info, key) return E.global.datatexts.customPanels[panel][key] end
+	panelOpts.templateGroup.set = function(info, key, value) E.global.datatexts.customPanels[panel][key] = value; DT:UpdatePanelAttributes(panel, E.global.datatexts.customPanels[panel]) end
+
+	E.Options.args.datatexts.args.panels.args[panel] = opts
 end
 
-PanelLayoutOptions = function()
+local dts = {[''] = L["NONE"]}
+function DT:PanelLayoutOptions()
 	for name, data in pairs(DT.RegisteredDataTexts) do
-		datatexts[name] = data.localizedName or L[name]
+		dts[name] = data.localizedName or L[name]
 	end
-	datatexts[''] = L["NONE"]
 
 	local options = E.Options.args.datatexts.args.panels.args
 
@@ -273,12 +276,12 @@ PanelLayoutOptions = function()
 					func = function()
 						E.db.datatexts.panels[name] = nil
 						options[name] = nil
-						PanelLayoutOptions()
+						DT:PanelLayoutOptions()
 					end,
 				}
 			end
 
-			for option, value in pairs(tab) do
+			for option in pairs(tab) do
 				if type(option) == 'number' then
 					if E.global.datatexts.customPanels[name] and option > E.global.datatexts.customPanels[name].numPoints then
 						-- Number of Datatexts has been lowered, remove datatext entry in profile
@@ -288,7 +291,7 @@ PanelLayoutOptions = function()
 							type = 'select',
 							order = option,
 							name = L[format("Position %d", option)],
-							values = datatexts,
+							values = dts,
 							get = function(info) return E.db.datatexts.panels[name][tonumber(info[#info])] end,
 							set = function(info, value)
 								E.db.datatexts.panels[name][tonumber(info[#info])] = value
@@ -296,13 +299,6 @@ PanelLayoutOptions = function()
 							end,
 						}
 					end
-				elseif type(value) ~= 'boolean' and P.datatexts.panels[name] and P.datatexts.panels[name][option] then
-					-- TODO: need to convert the old [name][option] to the number style..
-					options[name].args[option] = options[name].args[option] or {
-						type = 'select',
-						name = L[option],
-						values = datatexts,
-					}
 				end
 			end
 		end
@@ -317,16 +313,8 @@ E.Options.args.datatexts = {
 	get = function(info) return E.db.datatexts[info[#info]] end,
 	set = function(info, value) E.db.datatexts[info[#info]] = value; DT:LoadDataTexts() end,
 	args = {
-		intro = {
-			order = 1,
-			type = "description",
-			name = L["DATATEXT_DESC"],
-		},
-		spacer = {
-			order = 2,
-			type = "description",
-			name = "",
-		},
+		intro = ACH:Description(L["DATATEXT_DESC"], 1),
+		spacer = ACH:Spacer(2),
 		general = {
 			order = 3,
 			type = "group",
@@ -458,6 +446,23 @@ E.Options.args.datatexts = {
 						},
 					},
 				},
+				durability = {
+					order = 8,
+					type = "group",
+					name = L["Durability"],
+					guiInline = true,
+					args = {
+						percThreshold = {
+							order = 1,
+							type = "range",
+							name = L["Flash Threshold"],
+							desc = L["The durability percent that the datatext will start flashing.  Set to -1 to disable"],
+							min = -1, max = 99, step = 1,
+							get = function(info) return E.db.datatexts.durability[info[#info]] end,
+							set = function(info, value) E.db.datatexts.durability[info[#info]] = value; DT:LoadDataTexts() end,
+						},
+					},
+				},
 			},
 		},
 		panels = {
@@ -482,7 +487,7 @@ E.Options.args.datatexts = {
 							--end,
 						},
 						add = {
-							order = 14,
+							order = 1,
 							type = 'execute',
 							name = L['Add'],
 							width = 'full',
@@ -500,7 +505,7 @@ E.Options.args.datatexts = {
 
 								PanelGroup_Create(name)
 								DT:BuildPanelFrame(name, E.global.datatexts.customPanels[name])
-								PanelLayoutOptions()
+								DT:PanelLayoutOptions()
 
 								E.Libs.AceConfigDialog:SelectGroup('ElvUI', 'datatexts', 'panels', name)
 								E.global.datatexts.newPanelInfo = E:CopyTable({}, G.datatexts.newPanelInfo)
@@ -538,8 +543,13 @@ E.Options.args.datatexts = {
 							name = L["Backdrop"],
 							type = "toggle",
 						},
-						panelTransparency = {
+						border = {
 							order = 6,
+							name = L["Border"],
+							type = "toggle",
+						},
+						panelTransparency = {
+							order = 7,
 							type = 'toggle',
 							name = L["Panel Transparency"],
 						},
@@ -575,8 +585,13 @@ E.Options.args.datatexts = {
 							name = L["Backdrop"],
 							type = "toggle",
 						},
-						panelTransparency = {
+						border = {
 							order = 6,
+							name = L["Border"],
+							type = "toggle",
+						},
+						panelTransparency = {
+							order = 7,
 							type = 'toggle',
 							name = L["Panel Transparency"],
 						},
@@ -601,18 +616,23 @@ E.Options.args.datatexts = {
 							end,
 						},
 						numPoints = {
-							order = 1,
+							order = 5,
 							type = 'range',
 							name = L["Number of DataTexts"],
 							min = 1, max = 2, step = 1,
 						},
 						backdrop = {
-							order = 5,
+							order = 6,
 							name = L["Backdrop"],
 							type = "toggle",
 						},
+						border = {
+							order = 7,
+							name = L["Border"],
+							type = "toggle",
+						},
 						panelTransparency = {
-							order = 6,
+							order = 8,
 							type = 'toggle',
 							name = L["Panel Transparency"],
 						},
@@ -621,15 +641,11 @@ E.Options.args.datatexts = {
 			},
 		},
 		friends = {
-			order = 7,
+			order = 5,
 			type = "group",
 			name = L["FRIENDS"],
 			args = {
-				description = {
-					order = 1,
-					type = "description",
-					name = L["Hide specific sections in the datatext tooltip."],
-				},
+				description = ACH:Description(L["Hide specific sections in the datatext tooltip."], 1),
 				hideGroup1 = {
 					order = 2,
 					type = "multiselect",
@@ -645,8 +661,8 @@ E.Options.args.datatexts = {
 					order = 2,
 					type = "multiselect",
 					name = L["Hide by Application"],
-					get = function(info, key) return E.db.datatexts.friends[key] end,
-					set = function(info, key, value) E.db.datatexts.friends[key] = value; DT:LoadDataTexts() end,
+					get = function(info, key) return E.db.datatexts.friends['hide'..key] end,
+					set = function(info, key, value) E.db.datatexts.friends['hide'..key] = value; DT:LoadDataTexts() end,
 					sortByValue = true,
 					values = {
 						['WoW'] = "World of Warcraft",
@@ -672,4 +688,4 @@ E:CopyTable(E.Options.args.datatexts.args.panels.args.newPanel.args, DTPanelOpti
 E.Options.args.datatexts.args.panels.args.newPanel.args.templateGroup.get = function(info, key) return E.global.datatexts.newPanelInfo[key] end
 E.Options.args.datatexts.args.panels.args.newPanel.args.templateGroup.set = function(info, key, value) E.global.datatexts.newPanelInfo[key] = value end
 
-PanelLayoutOptions()
+DT:PanelLayoutOptions()

@@ -3,12 +3,16 @@ local B = E:GetModule('Bags')
 
 --Lua functions
 local _G = _G
+local ipairs = ipairs
 local unpack = unpack
 local tinsert = tinsert
 --WoW API / Variables
 local CreateFrame = CreateFrame
+local GetBagSlotFlag = GetBagSlotFlag
 local RegisterStateDriver = RegisterStateDriver
 local NUM_BAG_FRAMES = NUM_BAG_FRAMES
+local LE_BAG_FILTER_FLAG_EQUIPMENT = LE_BAG_FILTER_FLAG_EQUIPMENT
+local NUM_LE_BAG_FILTER_FLAGS = NUM_LE_BAG_FILTER_FLAGS
 
 local function OnEnter()
 	if not E.db.bags.bagBar.mouseover then return; end
@@ -113,7 +117,6 @@ function B:LoadBagBar()
 	B.BagBar:SetScript("OnLeave", OnLeave)
 
 	_G.MainMenuBarBackpackButton:SetParent(B.BagBar)
-	_G.MainMenuBarBackpackButton.SetParent = E.dummy
 	_G.MainMenuBarBackpackButton:ClearAllPoints()
 	_G.MainMenuBarBackpackButtonCount:FontTemplate(nil, 10)
 	_G.MainMenuBarBackpackButtonCount:ClearAllPoints()
@@ -127,7 +130,6 @@ function B:LoadBagBar()
 	for i = 0, NUM_BAG_FRAMES-1 do
 		local b = _G["CharacterBag"..i.."Slot"]
 		b:SetParent(B.BagBar)
-		b.SetParent = E.dummy
 		b:HookScript('OnEnter', OnEnter)
 		b:HookScript('OnLeave', OnLeave)
 

@@ -35,6 +35,12 @@ do
 	local searches = {}
 	local search_index = 1
 
+    function M.clear_selection()
+        if searches[search_index] then
+            searches[search_index].table:SetSelectedRecord()
+        end
+    end
+
 	function current_search()
 		return searches[search_index]
 	end
@@ -225,7 +231,7 @@ function start_search(queries, continuation)
 			total_scan_pages = total_scan_pages + (start_page - 1)
 			total_scan_pages = max(total_scan_pages, 1)
 			current_page = min(current_page, total_scan_pages)
-			aux.status_bar:update_status(current_page / total_scan_pages, (current_query - 1) / #queries)
+			aux.status_bar:update_status(current_page / total_scan_pages, current_query / #queries)
 		end,
 		on_page_scanned = function()
 			search.table:SetDatabase()
@@ -412,3 +418,4 @@ do
 		end
 	end
 end
+

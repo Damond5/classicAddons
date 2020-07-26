@@ -2,6 +2,7 @@
 local _, addon = ...
 local private = {}
 local L = LibStub("AceLocale-3.0"):GetLocale("RCLootCouncil")
+local LC = LibStub("AceLocale-3.0"):GetLocale("RCLootCouncil_Classic")
 
 ----------------------------------------------
 -- Core
@@ -23,6 +24,18 @@ addon.defaults.profile.usage = {
    ask_ml = true,
    state = "ask_ml"
 }
+
+-- Rep Items defaults:
+addon.defaults.profile.autoAwardRepItems = false
+addon.defaults.profile.autoAwardRepItemsReason = 1
+addon.defaults.profile.autoAwardRepItemsMode = "person" -- or RR
+addon.defaults.profile.autoAwardRepItemsTo = ""
+addon.defaults.profile.autoAwardRepItemsModeOptions = {
+   person   = LC["opt_autoAwardRepItemsMode_personal"],
+   RR       = LC["opt_autoAwardRepItemsMode_roundrobin"]
+}
+
+addon.defaults.profile.useWithGroupLoot = false
 
 -- Some Main Hand weapons are "Ranged" in Classic
 addon.INVTYPE_Slots.INVTYPE_RANGED = "RangedSlot"
@@ -102,7 +115,7 @@ end
 local enchanting_localized_name = nil
 function addon:GetPlayerInfo ()
    local enchant, lvl = nil, 0
-   if not enchanting_localized_name then	   
+   if not enchanting_localized_name then
       enchanting_localized_name = GetSpellInfo(7411)
    end
    for i = 1, GetNumSkillLines() do

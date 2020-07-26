@@ -3,6 +3,7 @@ local DT = E:GetModule('DataTexts')
 
 local _G = _G
 local select = select
+local wipe = wipe
 local format, pairs = format, pairs
 local GetInventoryItemDurability = GetInventoryItemDurability
 local ToggleCharacter = ToggleCharacter
@@ -12,7 +13,7 @@ local GetInventoryItemLink = GetInventoryItemLink
 local GetMoneyString = GetMoneyString
 
 local DURABILITY = DURABILITY
-local REPAIR_COST  = REPAIR_COST
+local REPAIR_COST = REPAIR_COST
 local displayString = DURABILITY..": %s%d%%|r"
 local tooltipString = "%d%%"
 local totalDurability = 0
@@ -36,10 +37,12 @@ local function OnEvent(self)
 	totalDurability = 100
 	totalRepairCost = 0
 
+	wipe(invDurability)
+
 	for index in pairs(slots) do
-		local current, max = GetInventoryItemDurability(index)
-		if current then
-			local perc = (current/max)*100
+		local currentDura, maxDura = GetInventoryItemDurability(index)
+		if currentDura and maxDura > 0 then
+			local perc = (currentDura/maxDura)*100
 			invDurability[index] = perc
 
 			if perc < totalDurability then
@@ -53,6 +56,12 @@ local function OnEvent(self)
 	local r, g, b = E:ColorGradient(totalDurability * .01, 1, .1, .1, 1, 1, .1, .1, 1, .1)
 	local hex = E:RGBToHex(r, g, b)
 	self.text:SetFormattedText(displayString, hex, totalDurability)
+
+	if totalDurability <= E.db.datatexts.durability.percThreshold then
+		E:Flash(self, 0.53, true)
+	else
+		E:StopFlash(self)
+	end
 end
 
 local function Click()

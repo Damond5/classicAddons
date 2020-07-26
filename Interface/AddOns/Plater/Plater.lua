@@ -46,7 +46,8 @@ local pairs = pairs
 local InCombatLockdown = InCombatLockdown
 local UnitIsPlayer = UnitIsPlayer
 local UnitClassification = UnitClassification
---local UnitDetailedThreatSituation = UnitDetailedThreatSituation
+local UnitDetailedThreatSituation = UnitDetailedThreatSituation
+local UnitThreatSituation = UnitThreatSituation
 local UnitCanAttack = UnitCanAttack
 local IsSpellInRange = IsSpellInRange
 local abs = math.abs
@@ -79,11 +80,11 @@ local Plater = DF:CreateAddOn ("Plater", "PlaterDB", PLATER_DEFAULT_SETTINGS, { 
 	}
 })
 
-Plater.versionString = GetAddOnMetadata("Plater", "Version") or GetAddOnMetadata("Plater_dev", "Version")
+Plater.versionString = GetAddOnMetadata("Plater_dev", "Version") or GetAddOnMetadata("Plater", "Version")
 Plater.fullVersionInfo = Plater.versionString .. " - DetailsFramework v" .. select(2,LibStub:GetLibrary("DetailsFramework-1.0"))
 function Plater.GetVersionInfo(printOut)
 	-- update, just in case...
-	Plater.versionString = GetAddOnMetadata("Plater", "Version") or GetAddOnMetadata("Plater_dev", "Version")
+	Plater.versionString = GetAddOnMetadata("Plater_dev", "Version") or GetAddOnMetadata("Plater", "Version")
 	Plater.fullVersionInfo = Plater.versionString .. " - DetailsFramework v" .. select(2,LibStub:GetLibrary("DetailsFramework-1.0"))
 	if printOut then print("Plater version info:\n" .. Plater.fullVersionInfo) end
 	return Plater.fullVersionInfo
@@ -97,18 +98,6 @@ if LCD then
 	LCD.RegisterCallback(Plater, "UNIT_BUFF", function(event, unit)end)
 	UnitAura = LCD.UnitAuraWithBuffs
 end
-
---threat stuff from: https://github.com/dfherr/LibThreatClassic2
-local ThreatLib = LibStub:GetLibrary ("LibThreatClassic2")
-
-local UnitThreatSituation = function (unit, mob)
-    return ThreatLib:UnitThreatSituation (unit, mob)
-end
-
-local UnitDetailedThreatSituation = function (unit, mob)
-    return ThreatLib:UnitDetailedThreatSituation (unit, mob)
-end
-
 
 --> when a hook script is compiled, it increases the build version, so the handler for running scripts will notice in the change and update the script in real time
 local PLATER_HOOK_BUILD = 1
@@ -939,11 +928,11 @@ Plater.DefaultSpellRangeList = {
 					plateFrame.unitFrame [MEMBER_RANGE] = true
 
 				else
-					local healthBarNewAlpha = inRangeAlpha * (notTheTarget and healthBar_rangeCheckAlpha or 1)
-					if (not DF:IsNearlyEqual (healthBar:GetAlpha(), healthBarNewAlpha, 0.01)) then
+					local newAlpha = inRangeAlpha * (notTheTarget and overallRangeCheckAlpha or 1)
+					if (not DF:IsNearlyEqual (unitFrame:GetAlpha(), newAlpha, 0.01)) then
 						--play animations (animation aren't while in development)
 						unitFrame:SetAlpha (inRangeAlpha * (notTheTarget and overallRangeCheckAlpha or 1))
-						healthBar:SetAlpha (healthBarNewAlpha)
+						healthBar:SetAlpha (inRangeAlpha * (notTheTarget and healthBar_rangeCheckAlpha or 1))
 						castBar:SetAlpha (inRangeAlpha * (notTheTarget and castBar_rangeCheckAlpha or 1))
 						powerBar:SetAlpha (inRangeAlpha * (notTheTarget and powerBar_rangeCheckAlpha or 1))
 						buffFrame1:SetAlpha (inRangeAlpha * (notTheTarget and buffFrames_rangeCheckAlpha or 1))
@@ -976,8 +965,8 @@ Plater.DefaultSpellRangeList = {
 					plateFrame.unitFrame [MEMBER_RANGE] = false
 
 				else
-					local healthBarNewAlpha = healthBar_rangeCheckAlpha * (notTheTarget and healthBar_rangeCheckAlpha or 1)
-					if (not DF:IsNearlyEqual (healthBar:GetAlpha(), healthBarNewAlpha, 0.01)) then
+					local newAlpha = overallRangeCheckAlpha * (notTheTarget and alphaMultiplier or 1)
+					if (not DF:IsNearlyEqual (unitFrame:GetAlpha(), newAlpha, 0.01)) then
 						
 						--play animations (animation aren't while in development)
 --						unitFrame:SetAlpha (overallRangeCheckAlpha * (notTheTarget and overallRangeCheckAlpha or 1))
@@ -1116,7 +1105,7 @@ Plater.DefaultSpellRangeList = {
 			Plater.PlayerIsTank = true
 		else
 			TANK_CACHE [UnitName ("player")] = false
-			Plater.PlayerIsTank = false
+			Plater.PlayerIsTank = false or Plater.db.profile.tank_threat_colors
 		end
 	end
 	
@@ -1124,8 +1113,6 @@ Plater.DefaultSpellRangeList = {
 	--this is called when the player enter, leave or when the group roster is changed
 	--tank cache is used mostly in the aggro check to know if the player is a tank
 	function Plater.RefreshTankCache() --private
-		Plater.PlayerIsTank = Plater.db.profile.tank_threat_colors
-	
 		wipe (TANK_CACHE)
 		
 		--add the player to the tank pool if the player is a tank
@@ -4315,6 +4302,8 @@ end
 		newIcon.Cooldown:SetHideCountdownNumbers (true)
 		newIcon.Cooldown:Hide()
 		
+		newIcon.Cooldown.noCooldownCount = Plater.db.profile.disable_omnicc_on_auras
+		
 		--newIcon.Cooldown:SetSwipeColor (0, 0, 0) --not working
 		--newIcon.Cooldown:SetDrawSwipe (false)
 		--newIcon.Cooldown:SetSwipeTexture ("Interface\\Garrison\\Garr_TimerFill")
@@ -5778,11 +5767,7 @@ end
 		end
 		
 		--todo: threat on classic
-		local isTanking, threatStatus, threatpct= UnitDetailedThreatSituation ("player", self.displayedUnit)
-		if threatpct == nil and threatStatus == 0 and UnitIsUnit("player", self.displayedUnit.."target") then
-			isTanking = 1
-			threatStatus = 3
-		end
+		local isTanking, threatStatus, threatpct = UnitDetailedThreatSituation ("player", self.displayedUnit)
 		
 		--expose all threat situation to scripts
 		self.namePlateThreatIsTanking = isTanking
@@ -5901,7 +5886,7 @@ end
 					Plater.CheckRange (self.PlateFrame, true)
 				end
 			else 	
-				if (threatStatus == 0 and threatpct == nil) then
+				if (threatStatus == nil) then
 					self.PlateFrame.playerHasAggro = false
 					
 					--> unit is in combat?
@@ -7075,6 +7060,8 @@ end
 			unitFrame.ExtraIconFrame:SetOption ("icon_height", Plater.db.profile.extra_icon_height)
 			unitFrame.ExtraIconFrame:SetOption ("texcoord", Plater.db.profile.extra_icon_wide_icon and Plater.WideIconCoords or Plater.BorderLessIconCoords)
 			unitFrame.ExtraIconFrame:SetOption ("desc_text", Plater.db.profile.extra_icon_caster_name)
+			unitFrame.ExtraIconFrame:SetOption ("stack_text", Plater.db.profile.extra_icon_show_stacks)
+			unitFrame.ExtraIconFrame:SetOption ("surpress_tulla_omni_cc", Plater.db.profile.disable_omnicc_on_auras)
 			
 			--> update refresh ID
 			unitFrame.ExtraIconFrame.RefreshID = PLATER_REFRESH_ID
@@ -8286,9 +8273,16 @@ end
 	local GameTooltipFrameTextLeft2 = _G ["PlaterScanTooltipTextLeft2"]
 	
 	function Plater.GetActorSubName (plateFrame) --private
+		local cbMode = GetCVar("colorblindMode") == "1"
 		GameTooltipFrame:SetOwner (WorldFrame, "ANCHOR_NONE")
 		GameTooltipFrame:SetHyperlink ("unit:" .. (plateFrame [MEMBER_GUID] or ''))
-		return GameTooltipFrameTextLeft2:GetText()
+		--print(cbMode, GetCVar("colorblindMode"), GameTooltipFrameTextLeft3 and GameTooltipFrameTextLeft3:GetText(), PlaterScanTooltip:NumLines())
+		if cbMode then
+			local GameTooltipFrameTextLeft3 = GameTooltipFrameTextLeft3 or _G ["PlaterScanTooltipTextLeft3"]
+			return GameTooltipFrameTextLeft3 and GameTooltipFrameTextLeft3:GetText() or GameTooltipFrameTextLeft2:GetText()
+		else
+			return GameTooltipFrameTextLeft2:GetText()
+		end
 	end
 
 	local GameTooltipScanQuest = CreateFrame ("GameTooltip", "PlaterScanQuestTooltip", nil, "GameTooltipTemplate")
@@ -9681,6 +9675,20 @@ end
 			end
 		end
 	end
+	
+	--recompile a single scriptObject deleting the global environment
+	function Plater.RecompileScript(scriptObject)
+		local scriptType = Plater.GetScriptType(scriptObject)
+		if (scriptType == "script") then
+			PLATER_GLOBAL_SCRIPT_ENV [scriptObject.Name] = nil
+			Plater.CompileScript(scriptObject)
+
+		elseif (scriptType == "hook") then
+			PLATER_GLOBAL_MOD_ENV [scriptObject.Name] = nil
+			Plater.CompileHook(scriptObject)
+		end
+	end
+
 
 	--when a script object get disabled, need to clear all compiled scripts in the cache and recompile than again
 	--this other scripts that uses the same trigger name get activated
@@ -9987,6 +9995,17 @@ end
 			end		
 		end
 	end
+
+	-- which option types should be copied to modTable.config?
+	local options_for_config_table = {
+		[1] = true, -- Color
+		[2] = true, -- Number
+		[3] = true, -- Text
+		[4] = true, -- Toggle
+		[5] = false, -- Label
+		[6] = false, -- Blank Line
+		[7] = true -- Texture
+	}
 	
 	--compile scripts from the Hooking tab
 	function Plater.CompileHook (scriptObject)
@@ -10068,7 +10087,26 @@ end
 		local needsInitCall = false
 		if not PLATER_GLOBAL_MOD_ENV [scriptObject.Name] then
 			needsInitCall = true
-			PLATER_GLOBAL_MOD_ENV [scriptObject.Name] = {}
+			PLATER_GLOBAL_MOD_ENV [scriptObject.Name] = {
+				config = {}
+			}
+		end
+
+		--copy options to global env
+		-- ensure options are valid:
+		Plater.CreateOptionTableForScriptObject(scriptObject)
+		local scriptOptions = scriptObject.Options
+		local scriptOptionsValues = scriptObject.OptionsValues
+
+		for i = 1, #scriptOptions do
+			local thisOption = scriptOptions[i]
+			if options_for_config_table[thisOption.Type] then
+				if type(scriptOptionsValues[thisOption.Key]) == "boolean" then
+					PLATER_GLOBAL_MOD_ENV [scriptObject.Name].config[thisOption.Key] = scriptOptionsValues[thisOption.Key]
+				else
+					PLATER_GLOBAL_MOD_ENV [scriptObject.Name].config[thisOption.Key] = scriptOptionsValues[thisOption.Key] or thisOption.Value
+				end
+			end
 		end
 		
 		--compile
@@ -10145,7 +10183,26 @@ end
 		local needsInitCall = false
 		if not PLATER_GLOBAL_SCRIPT_ENV [scriptObject.Name] then
 			needsInitCall = true
-			PLATER_GLOBAL_SCRIPT_ENV [scriptObject.Name] = {}
+			PLATER_GLOBAL_SCRIPT_ENV [scriptObject.Name] = {
+				config = {}
+			}
+		end
+
+		--copy options to global env
+		-- ensure options are valid:
+		Plater.CreateOptionTableForScriptObject(scriptObject)
+		local scriptOptions = scriptObject.Options
+		local scriptOptionsValues = scriptObject.OptionsValues
+
+		for i = 1, #scriptOptions do
+			local thisOption = scriptOptions[i]
+			if options_for_config_table[thisOption.Type] then
+				if type(scriptOptionsValues[thisOption.Key]) == "boolean" then
+					PLATER_GLOBAL_SCRIPT_ENV [scriptObject.Name].config[thisOption.Key] = scriptOptionsValues[thisOption.Key]
+				else
+					PLATER_GLOBAL_SCRIPT_ENV [scriptObject.Name].config[thisOption.Key] = scriptOptionsValues[thisOption.Key] or thisOption.Value
+				end
+			end
 		end
 
 		--compile
@@ -10230,9 +10287,9 @@ end
 				end
 				
 				--run initialization (once)
-				if not needsInitCall then
+				if needsInitCall then
 					Plater.ScriptMetaFunctions.ScriptRunInitialization(globalScriptObject)
-					needsInitCall = true
+					needsInitCall = false
 				end
 			end
 		end
@@ -10449,6 +10506,28 @@ end
 		end
 	end
 
+	
+	--merge/clean up user options
+	function Plater.UpdateOptionsForModScriptImport(scriptObjectNew, scriptObjectOld)
+		if not scriptObjectNew or not scriptObjectOld then return end
+		
+		--consistency/init:
+		scriptObjectNew.OptionsValues = scriptObjectNew.OptionsValues or {}
+		scriptObjectNew.Options = scriptObjectNew.Options or {}
+		scriptObjectOld.scriptObjectOld = scriptObjectOld.scriptObjectOld or {}
+		
+		local newUserOptions = scriptObjectNew.OptionsValues
+		local newOptions = scriptObjectNew.Options
+		local oldUserOptions = scriptObjectOld.OptionsValues
+		
+		for i=1, #newOptions do
+			local newOption = newOptions[i]
+			if newOption.Key and oldUserOptions[newOption.Key] then
+				newUserOptions[newOption.Key] = oldUserOptions[newOption.Key]
+			end
+		end
+	end
+
 	--import a string from any source with more options than the convencional importer
 	--this is used when importing scripts from the library and when the user inserted the wrong script type in the import box at hook or script, e.g. imported a hook in the script import box
 	--guarantee to always receive a 'print' type of encode
@@ -10509,6 +10588,8 @@ end
 								--keep the enabled state
 								newScript.Enabled = scriptObject.Enabled
 								
+								Plater.UpdateOptionsForModScriptImport(newScript, scriptObject)
+								
 								--replace the old script with the new one
 								tremove (scriptDB, i)
 								tinsert (scriptDB, i, newScript)
@@ -10555,6 +10636,8 @@ end
 								
 								--keep the enabled state
 								newScript.Enabled = scriptObject.Enabled
+								
+								Plater.UpdateOptionsForModScriptImport(newScript, scriptObject)
 								
 								--replace the old script with the new one
 								tremove (scriptDB, i)
@@ -10607,6 +10690,7 @@ end
 	function Plater.AddScript (scriptObjectToAdd, noOverwrite)
 		if (scriptObjectToAdd) then
 			local indexToReplace
+			local existingScriptObject
 			local scriptType = Plater.GetScriptType (scriptObjectToAdd)
 			local scriptDB = Plater.GetScriptDB (scriptType)
 			
@@ -10619,6 +10703,7 @@ end
 						return
 					else
 						indexToReplace = i
+						existingScriptObject = scriptObject
 						break
 					end
 				end
@@ -10626,6 +10711,7 @@ end
 			
 			if (indexToReplace) then
 				--remove the old script and add the new one
+				Plater.UpdateOptionsForModScriptImport(scriptObjectToAdd, existingScriptObject)
 				tremove (scriptDB, indexToReplace)
 				tinsert (scriptDB, indexToReplace, scriptObjectToAdd)
 			else
@@ -10658,6 +10744,8 @@ end
 				scriptObject.Hooks [hookName] = hookCode
 			end
 			
+			scriptObject.Options = indexTable.options
+
 			scriptObject.url         = indexTable.url or ""
 			scriptObject.version = indexTable.version or -1
 			scriptObject.semver  = indexTable.semver or ""
@@ -10678,6 +10766,7 @@ end
 			scriptObject.Time  		= indexTable ["8"]
 			scriptObject.Revision  		= indexTable ["9"]
 			scriptObject.PlaterCore  	= indexTable ["10"]
+			scriptObject.Options = indexTable.options
 			scriptObject.url  	 = indexTable.url or ""
 			scriptObject.version = indexTable.version or -1
 			scriptObject.semver  = indexTable.semver or ""
@@ -10710,7 +10799,8 @@ end
 	end
 
 	--make an indexScriptTable for the script object using indexes instead of key to decrease the size of the string to be exported
-	function Plater.PrepareTableToExport (scriptObject)
+	--function Plater.PrepareTableToExport (scriptObject)
+	function Plater.PrepareTableToExport_OLD (scriptObject)
 		
 		if (scriptObject.Hooks) then
 			--script for hooks
@@ -10755,8 +10845,8 @@ end
 		end
 	end
 	
-	function Plater.PrepareTableToExportStringIndexes (scriptObject)
-	--function Plater.PrepareTableToExport (scriptObject)
+	--function Plater.PrepareTableToExportStringIndexes (scriptObject)
+	function Plater.PrepareTableToExport (scriptObject)
 		
 		if (scriptObject.Hooks) then
 			--script for hooks
@@ -10776,8 +10866,10 @@ end
 				t ["9"] [hookName] = hookCode
 			end
 			
-			t["options"] = scriptObject.Options or {}
+			t ["options"] = scriptObject.Options or {}
 			
+			t ["addon"] = "Plater"
+			t ["tocversion"] = select(4, GetBuildInfo()) -- provide export toc
 			t ["type"] = "hook"
 			
 			return t
@@ -10801,8 +10893,10 @@ end
 				t [(10 + i)..""] = scriptObject [memberName]
 			end
 			
-			t["options"] = scriptObject.Options or {}
+			t ["options"] = scriptObject.Options or {}
 			
+			t ["addon"] = "Plater"
+			t ["tocversion"] = select(4, GetBuildInfo()) -- provide export toc
 			t ["type"] = "script"
 			
 			return t
@@ -11032,7 +11126,10 @@ local cvarDiagList = {
 }
 
 function SlashCmdList.PLATER (msg, editbox)
-	if (msg == "dignostico" or msg == "diag" or msg == "debug") then
+	if (msg == "version") then
+		Plater.GetVersionInfo(true)
+		return
+	elseif (msg == "dignostico" or msg == "diag" or msg == "debug") then
 		
 		print ("Plater Diagnostic:")
 		for i = 1, #cvarDiagList do
