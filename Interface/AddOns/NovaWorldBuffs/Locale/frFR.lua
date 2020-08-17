@@ -159,7 +159,7 @@ L["Options"] = "Options";
 
 --Spirit of Zandalar buff NPC first yell string (part of his first yell msg before before buff).
 L["Begin the ritual"] = "Commencez le rituel"
-L["The Blood God"] = "Le Dieu sanglantd"; --First Booty bay yell from Zandalarian Emissary.
+L["The Blood God"] = "Le Dieu sanglant"; --First Booty bay yell from Zandalarian Emissary.
 --Spirit of Zandalar buff NPC second yell string (part of his second yell msg before before buff).
 L["slayer of Hakkar"] = "vainqueur d’Hakkar";
 
@@ -524,3 +524,5 @@ L["showBuffStatsDesc"] = "Show how many times you've gotten each world buff in t
 L["buffResetButtonTooltip"] = "This will reset all buffs.\nBuff count data will not be reset."; --Reset button tooltip for the /buffs frame.
 L["time"] = "time"; --Singular - This shows how many timers you got a buff. Example: (1 time)
 L["times"] = "times"; --Plural - This shows how many timers you got a buff. Example: (5 times)
+
+L["Blackrock Mountain"] = "Mont Blackrock";
