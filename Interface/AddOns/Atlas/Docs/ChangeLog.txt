@@ -1,8 +1,8 @@
-$Id: ChangeLog.txt 354 2020-06-20 06:50:50Z arith $
+$Id: ChangeLog.txt 398 2022-03-23 15:12:06Z arithmandar $
 Atlas, a World of Warcraft instance map browser
 Copyright 2005 ~ 2010 - Dan Gilbert <dan.b.gilbert at gmail dot com>
 Copyright 2010 - Lothaer <lothayer at gmail dot com>, Atlas Team
-Copyright 2011 ~ 2020 - Arith Hsu, Atlas Team <atlas.addon at gmail dot com>
+Copyright 2011 ~ 2022 - Arith Hsu, Atlas Team <atlas.addon at gmail dot com>
 
 ==============
 Known Issues:
@@ -14,6 +14,95 @@ Known Issues:
 ==============
 = Change Log =
 ==============
+
+v1.50.04 (Mar. 23, 2022)
+------------------------
+- Update level range for ClassicEra / BCC
+
+v1.50.03 (Mar. 23, 2022)
+------------------------
+- BCC ToC update to support WoW 2.5.4
+
+v1.50.02 (Feb. 28, 2022)
+------------------------
+- Library update: LibUIDropDownMenu
+
+v1.50.01 (Feb. 23, 2022)
+------------------------
+- Library update: LibBabble-SubZone
+
+v1.50.00 (Feb. 23, 2022)
+------------------------
+- Toc update to support WoW 9.2.0
+
+v1.49.09 (Feb. 20, 2022)
+------------------------
+- Library update: LibBabble-SubZone
+
+v1.49.08 (Feb. 19, 2022)
+------------------------
+- Updated level section information
+
+v1.49.07 (Feb. 15, 2022)
+------------------------
+- Library update: LibUIDropDownMenu
+
+v1.49.06 (Feb. 10, 2022)
+------------------------
+- Library update: LibUIDropDownMenu
+
+v1.49.05 (Feb. 9, 2022)
+------------------------
+- Support multiple ToC
+- BCC ToC update to support WoW 2.5.3
+- Classic ToC update to support WoW 1.14.2
+
+v1.49.04 (Jan. 27, 2022)
+------------------------
+- Library update: LibUIDropDownMenu
+
+v1.49.03 (Jan. 26, 2022)
+------------------------
+- TOC update to support WoW 9.1.5
+- Fixed GameToolTip's backdrop setting issue
+
+v1.49.02 (Jun. 30, 2021)
+------------------------
+- TOC update to support WoW 9.1.0
+- Update AreaID table for retail; spilt files for each classic server
+- Library update: LibUIDropDownMenu
+- Library update: LibBabble-SubZone
+
+v1.49.01 (Jun. 14, 2021)
+------------------------
+- Library update: LibUIDropDownMenu
+
+v1.49.00 (May 20, 2021)
+------------------------
+- TOC update to support WoW 9.0.5
+- AreaIDs updated to sync with WoW 9.1.0; WoW Classic TBC 2.5.1
+
+v1.48.03 (Dec. 06, 2020)
+------------------------
+- TOC update to support WoW 9.0.2 (Shadowlands)
+- Library update: LibUIDropDownMenu
+
+v1.48.02 (Oct. 26, 2020)
+------------------------
+- Library update: LibBabble-SubZone
+
+v1.48.01 (Oct. 18, 2020)
+------------------------
+- Library update: LibUIDropDownMenu
+
+v1.48.00 (Oct. 18, 2020)
+------------------------
+- Codes and TOC update to support WoW 9.0 (Shadowlands)
+- Updated AreaID to sync with Shadowlands
+
+v1.47.04 (Jul. 26, 2020)
+------------------------
+- Library update: LibBabble-SubZone
 
 v1.47.03 (Jun. 20, 2020)
 ------------------------

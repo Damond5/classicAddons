@@ -30,10 +30,6 @@ L["OPTIONS_GENERALSETTINGS_HEALTHBAR_TEXTURE"] = "Текстура полосы 
 L["OPTIONS_GENERALSETTINGS_TRANSPARENCY_ANCHOR_TITLE"] = "Контроль прозрачности"
 L["OPTIONS_GENERALSETTINGS_TRANSPARENCY_RANGECHECK"] = "Проверка дальности"
 L["OPTIONS_GENERALSETTINGS_TRANSPARENCY_RANGECHECK_ALPHA"] = "Величина прозрачности"
-L["OPTIONS_GENERALSETTINGS_TRANSPARENCY_RANGECHECK_ENABLED"] = "Включить проверку дальности"
-L["OPTIONS_GENERALSETTINGS_TRANSPARENCY_RANGECHECK_ENABLED_DESC"] = [=[Мобы, находящиеся вне радиуса, имеют свои прозрачные индикаторы здоровья.
-
-|cFFFFFF00Важно|r: проверьте, какое заклинание вы хотите использовать, чтобы видеть дальность.]=]
 L["OPTIONS_GENERALSETTINGS_TRANSPARENCY_RANGECHECK_SPEC_DESC"] = "Заклинание для проверки дальности на эту специализацию."
 L["OPTIONS_HOSTILE"] = "Враждебные"
 L["OPTIONS_NEUTRAL"] = "Нейтральные"
@@ -54,8 +50,7 @@ L["OPTIONS_PROFILE_ERROR_STRINGINVALID"] = "Неверный файл профи
 L["OPTIONS_PROFILE_ERROR_WRONGTAB"] = [=[Неверный файл профиля.
 
 Импорт 'Своего кода' или 'Улучшение Platera' можно найти в меню.]=]
---[[Translation missing --]]
---[[ L["OPTIONS_PROFILE_IMPORT_OVERWRITE"] = ""--]] 
+L["OPTIONS_PROFILE_IMPORT_OVERWRITE"] = "Профиль '%s' уже существует, перезаписать его?"
 L["OPTIONS_SETTINGS_COPIED"] = "настройки скопированы."
 L["OPTIONS_SETTINGS_FAIL_COPIED"] = "не удалось получить настройки для текущей выбранной вкладки."
 L["OPTIONS_SHADOWCOLOR"] = "Цвет тени"
@@ -68,10 +63,16 @@ L["OPTIONS_TABNAME_BUFF_LIST"] = "Список баффов"
 L["OPTIONS_TABNAME_BUFF_SETTINGS"] = "Настройки баффов"
 L["OPTIONS_TABNAME_BUFF_SPECIAL"] = "Особые баффы"
 L["OPTIONS_TABNAME_BUFF_TRACKING"] = "Отслеж. баффов"
-L["OPTIONS_TABNAME_COLORSNPC"] = "Окрашивание Npc"
-L["OPTIONS_TABNAME_CREDITS"] = "Благодарности"
+--[[Translation missing --]]
+L["OPTIONS_TABNAME_CASTBAR"] = "Cast Bar"
+--[[Translation missing --]]
+L["OPTIONS_TABNAME_CASTCOLORS"] = "\"Cast Colors and Names\""
+--[[Translation missing --]]
+L["OPTIONS_TABNAME_COMBOPOINTS"] = "Combo Points"
 L["OPTIONS_TABNAME_GENERALSETTINGS"] = "Общие настройки"
 L["OPTIONS_TABNAME_MODDING"] = "Моды"
+--[[Translation missing --]]
+L["OPTIONS_TABNAME_NPC_COLORNAME"] = "Npc Colors and Names"
 L["OPTIONS_TABNAME_NPCENEMY"] = "Вражеские Npc"
 L["OPTIONS_TABNAME_NPCFRIENDLY"] = "Союзные Npc"
 L["OPTIONS_TABNAME_PERSONAL"] = "Личная полоса"
@@ -79,6 +80,8 @@ L["OPTIONS_TABNAME_PLAYERENEMY"] = "Вражеские игроки"
 L["OPTIONS_TABNAME_PLAYERFRIENDLY"] = "Союзные игроки"
 L["OPTIONS_TABNAME_PROFILES"] = "Профили"
 L["OPTIONS_TABNAME_SCRIPTING"] = "Свой код"
+--[[Translation missing --]]
+L["OPTIONS_TABNAME_SEARCH"] = "Search"
 L["OPTIONS_TABNAME_STRATA"] = "Уровень и слой"
 L["OPTIONS_TABNAME_TARGET"] = "Цель"
 L["OPTIONS_TABNAME_THREAT"] = "Свой цвет угрозы"

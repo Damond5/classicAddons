@@ -42,6 +42,10 @@ function ItemRack.InitButtons()
 --		button:SetAttribute("alt-slot*",ATTRIBUTE_NOOP)
 --		button:SetAttribute("shift-slot*",ATTRIBUTE_NOOP)
 		ItemRack.MenuMouseoverFrames["ItemRackButton"..i]=1
+
+		if ItemRack.MasqueGroups and ItemRack.MasqueGroups[1] then
+			ItemRack.MasqueGroups[1]:AddButton(button)
+		end
 	end
 
 	ItemRack.CreateTimer("ButtonsDocking",ItemRack.ButtonsDocking,.2,1) -- (repeat) on while buttons docking
@@ -218,7 +222,8 @@ end
 -- while buttons drag, this function periodically lights up docking possibilities
 function ItemRack.ButtonsDocking()
 
-	local button,dock = ItemRack.ButtonMoving
+	local button = ItemRack.ButtonMoving
+	local dock = nil
 	local buttonID = button:GetID()
 	local near = ItemRack.Near
 	if not button then
@@ -488,7 +493,7 @@ function ItemRack.ButtonPostClick(self,button)
 			ItemRackMenuFrame:Hide()
 		else
 			ItemRack.DockMenuToButton(id)
-			ItemRack.BuildMenu(id)
+			ItemRack.BuildMenu(id, nil, 2)
 		end
 	elseif IsShiftKeyDown() then
 		if id<20 then
@@ -563,7 +568,7 @@ function ItemRack.WriteButtonCooldowns()
 end
 
 function ItemRack.UpdateButtonLocks()
-	local isLocked
+	local isLocked, alreadyLocked
 	for i in pairs(ItemRackUser.Buttons) do
 		if i<20 then
 			isLocked = IsInventoryItemLocked(i)

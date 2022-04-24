@@ -1,9 +1,6 @@
 # Advanced Interface Options
 
-## [1.3.4](https://github.com/Stanzilla/AdvancedInterfaceOptions/tree/1.3.4) (2020-01-22)
-[Full Changelog](https://github.com/Stanzilla/AdvancedInterfaceOptions/compare/1.3.3...1.3.4)
+## [1.7.1](https://github.com/Stanzilla/AdvancedInterfaceOptions/tree/1.7.1) (2022-04-03)
+[Full Changelog](https://github.com/Stanzilla/AdvancedInterfaceOptions/compare/1.7.0...1.7.1) [Previous Releases](https://github.com/Stanzilla/AdvancedInterfaceOptions/releases)
 
-- incremented retail build number  
-- Update FUNDING.yml  
-- Update FUNDING.yml  
-- Update FUNDING.yml  
+- Bump toc for 9.2 (retail, bcc and classic)  

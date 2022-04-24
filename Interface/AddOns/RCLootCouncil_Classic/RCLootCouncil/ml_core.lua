@@ -438,7 +438,7 @@ function RCLootCouncilML:RemoveItemsInBags(...)
 	for i=#indexes, 1, -1 do
 		local index = tonumber(indexes[i])
 		if index and Items[index] then
-			addon.ItemStorage:RemvoveItem(Items[index])
+			addon.ItemStorage:RemoveItem(Items[index])
 			tinsert(removedEntries, 1, Items[index])
 		end
 	end
@@ -907,15 +907,6 @@ function RCLootCouncilML:GiveLoot(slot, winner, callback, ...)
 				break
 			end
 		end
-
-		-- If winner is the ML himself, also attempt to LootSlot().
-		-- It's hard to know (and no need to know) exactly whether the item should be distributed by LootSlot() or by GiveMasterLoot(),
-		-- unless we check if "OPEN_MASTER_LOOT_LIST" event fires immediately after LootSlot(),
-		-- so just try in both way.
-		if addon:UnitIsUnit(winner, "player") then
-			addon:Debug("LootSlot", slot)
-			LootSlot(slot)
-		end
 	end
 end
 
@@ -1007,7 +998,7 @@ local function registerAndAnnounceAward(session, winner, response, reason)
 	local changeAward = self.lootTable[session].awarded
 	self.lootTable[session].awarded = winner
 	if self.lootTable[session].bagged then
-		addon.ItemStorage:RemoveItem(self.lootTable[session].bagged)
+		self.lootTable[session].bagged.type = "to_trade"
 	end
 	addon:SendCommand("group", "awarded", session, winner, self.lootTable[session].owner)
 

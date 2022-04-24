@@ -1,16 +1,10 @@
 # WIM
 
-## [3.8.14](https://github.com/sylvanaar/wow-instant-messenger/tree/3.8.14) (2020-08-05)
-[Full Changelog](https://github.com/sylvanaar/wow-instant-messenger/compare/3.8.13...3.8.14) 
+## [3.9.5](https://github.com/Legacy-of-Sylvanaar/wow-instant-messenger/tree/3.9.5) (2022-01-18)
+[Full Changelog](https://github.com/Legacy-of-Sylvanaar/wow-instant-messenger/compare/3.9.4...3.9.5) [Previous Releases](https://github.com/Legacy-of-Sylvanaar/wow-instant-messenger/releases)
 
-- Fix #22 - add missing localization strings.  
-- Merge pull request #21 from anon1231823/patch-6  
-    Update ptBR.lua  
-- Merge pull request #23 from anon1231823/patch-7  
-    Update frFR.lua  
-- Update frFR.lua  
-- Update ptBR.lua  
-- Update ptBR.lua  
-- Update ptBR.lua  
-- Update ptBR.lua  
-- Update ptBR.lua  
+- bump tbc toc  
+- Merge pull request #2 from luckybgit/patch-1  
+    Update deDE.lua  
+- Update deDE.lua  
+    It wasnt authentic in german. Sounded weird and you couldnt tell what it does. now you do  

@@ -26,8 +26,8 @@ LibSharedMedia:Register ("statusbar", "testbar", [[Interface\AddOns\Plater\image
 LibSharedMedia:Register ("statusbar", "You Are Beautiful!", [[Interface\AddOns\Plater\images\regular_white]])
 LibSharedMedia:Register ("statusbar", "PlaterBackground 2", [[Interface\AddOns\Plater\images\noise_background]])
 
-LibSharedMedia:Register ("font", "Oswald", [[Interface\Addons\Plater\fonts\Oswald-Regular.otf]])
-LibSharedMedia:Register ("font", "Nueva Std Cond", [[Interface\Addons\Plater\fonts\NuevaStd-Cond.otf]])
+LibSharedMedia:Register ("font", "Oswald", [[Interface\Addons\Plater\fonts\Oswald-Regular.ttf]])
+LibSharedMedia:Register ("font", "Nueva Std Cond", [[Interface\Addons\Plater\fonts\Nueva Std Cond.ttf]])
 LibSharedMedia:Register ("font", "Accidental Presidency", [[Interface\Addons\Plater\fonts\Accidental Presidency.ttf]])
 LibSharedMedia:Register ("font", "TrashHand", [[Interface\Addons\Plater\fonts\TrashHand.TTF]])
 LibSharedMedia:Register ("font", "Harry P", [[Interface\Addons\Plater\fonts\HARRYP__.TTF]])
@@ -43,6 +43,26 @@ DF:InstallTemplate ("font", "PLATER_BUTTON_DISABLED", {color = {1/3, .8/3, .2/3}
 --button templates
 DF:InstallTemplate ("button", "PLATER_BUTTON_DISABLED", {backdropcolor = {.4, .4, .4, .3}, backdropbordercolor = {0, 0, 0, .5}}, "OPTIONS_BUTTON_TEMPLATE")
 DF:InstallTemplate ("button", "PLATER_BUTTON_SELECTED", {backdropbordercolor = {1, .7, .1, 1},}, "OPTIONS_BUTTON_TEMPLATE")
+
+DF:InstallTemplate ("dropdown", "PLATER_DROPDOWN_OPTIONS", {
+	backdrop = {
+		edgeFile = [[Interface\Buttons\WHITE8X8]],
+		edgeSize = 1,
+		bgFile = [[Interface\Tooltips\UI-Tooltip-Background]],
+		tileSize = 64,
+		tile = true
+	},
+
+	backdropcolor = {.3, .3, .3, .8},
+	backdropbordercolor = {0, 0, 0, 1},
+	onentercolor = {.3, .3, .3, .9},
+	onenterbordercolor = {1, 1, 1, 1},
+
+	dropicon = "Interface\\BUTTONS\\arrow-Down-Down",
+	dropiconsize = {16, 16},
+	dropiconpoints = {-2, -3},
+})
+
 
 -- those two may be removed, as they are covered by settings now
 DF:NewColor ("PLATER_FRIEND", .71, 1, 1, 1)
@@ -71,7 +91,18 @@ PLATER_DEFAULT_SETTINGS = {
 		--store as [NpcID] = {enabled1, enabled2, colorID}
 		--enabled1 is if the color is enabled overall, enabled2 is if the color is only for scripts
 		npc_colors = {},
-	
+
+		--store the cast colors customized by the user
+		cast_colors = {}, --[spellId] = {[1] = color, [2] = enabled, [3] = custom spell name}
+		cast_color_settings = { --these are settings for the original cast color settings
+			enabled = true,
+			width = 12,
+			height_offset = 0,
+			alpha = 0.8,
+			anchor = {side = 11, x = 0, y = 0},
+			layer = "Artwork",
+		},
+
 		click_space = {140, 28},
 		click_space_friendly = {140, 28},
 		click_space_always_show = false,
@@ -91,20 +122,22 @@ PLATER_DEFAULT_SETTINGS = {
 		plate_config  = {
 			friendlyplayer = {
 				enabled = true,
+				module_enabled = true,
 				only_damaged = true,
 				only_thename = false,
 				click_through = true,
 				show_guild_name = false,
 				
-				fixed_class_color = {0, 1, 0},
+				fixed_class_color = {0, 1, 0, 1},
 				
 				health = {70, 2},
 				health_incombat = {70, 2},
 				cast = {80, 8},
-				cast_incombat = {80, 14},
+				cast_incombat = {80, 12},
 				mana = {100, 3},
 				mana_incombat = {100, 3},
 				buff_frame_y_offset = 10,
+				castbar_offset_x = 0,
 				castbar_offset = 0,
 				
 				actorname_text_spacing = 10,
@@ -164,10 +197,11 @@ PLATER_DEFAULT_SETTINGS = {
 			
 			enemyplayer = {
 				enabled = true,
+				module_enabled = true,
 				show_guild_name = false,
 				
 				use_playerclass_color = true,
-				fixed_class_color = {1, .4, .1},
+				fixed_class_color = {1, .4, .1, 1},
 				
 				health = {112, 12},
 				cast = {112, 10},
@@ -178,11 +212,13 @@ PLATER_DEFAULT_SETTINGS = {
 				mana_incombat = {100, 4},
 				
 				buff_frame_y_offset = 0,
+				castbar_offset_x = 0,
 				castbar_offset = 0,
 				
 				actorname_text_spacing = 12,
 				actorname_text_size = 12,
 				actorname_text_font = "Arial Narrow",
+				actorname_use_class_color = false,
 				actorname_text_color = {1, 1, 1, 1},
 				actorname_text_outline = "NONE",
 				actorname_text_shadow_color = {0, 0, 0, 1},
@@ -249,6 +285,7 @@ PLATER_DEFAULT_SETTINGS = {
 				all_names = true,
 				relevance_state = 4,
 				enabled = true,
+				module_enabled = true,
 				
 				health = {112, 12},
 				cast = {112, 10},
@@ -259,6 +296,7 @@ PLATER_DEFAULT_SETTINGS = {
 				mana_incombat = {100, 4},
 				
 				buff_frame_y_offset = 0,
+				castbar_offset_x = 0,
 				castbar_offset = 0,
 				
 				actorname_text_spacing = 10,
@@ -311,7 +349,8 @@ PLATER_DEFAULT_SETTINGS = {
 				percent_text_alpha = 1,
 				
 				quest_enabled = true,
-				quest_color = {.5, 1, 0},
+				quest_color_enabled = true,
+				quest_color = {.5, 1, 0, 1},
 				
 				big_actortitle_text_size = 11,
 				big_actortitle_text_font = "Arial Narrow",
@@ -330,6 +369,7 @@ PLATER_DEFAULT_SETTINGS = {
 			
 			enemynpc = {
 				enabled = true,
+				module_enabled = true,
 				all_names = true,
 				
 				health = {112, 12},
@@ -337,10 +377,11 @@ PLATER_DEFAULT_SETTINGS = {
 				mana = {100, 4},
 				
 				health_incombat = {120, 16},
-				cast_incombat = {120, 12},
+				cast_incombat = {120, 14},
 				mana_incombat = {100, 4},
 				
 				buff_frame_y_offset = 0,
+				castbar_offset_x = 0,
 				castbar_offset = 0,
 				
 				actorname_text_spacing = 10,
@@ -393,8 +434,9 @@ PLATER_DEFAULT_SETTINGS = {
 				percent_text_alpha = 1,
 				
 				quest_enabled = true,
-				quest_color_enemy = {1, .369, 0},
-				quest_color_neutral = {1, .65, 0},
+				quest_color_enabled = true,
+				quest_color_enemy = {1, .369, 0, 1},
+				quest_color_neutral = {1, .65, 0, 1},
 				
 				--no color / it'll auto colour by the reaction
 				big_actortitle_text_size = 10,
@@ -414,6 +456,7 @@ PLATER_DEFAULT_SETTINGS = {
 
 			player = {
 				enabled = true,
+				module_enabled = true,
 				click_through = false,
 				health = {150, 12},
 				health_incombat = {150, 12},
@@ -425,6 +468,7 @@ PLATER_DEFAULT_SETTINGS = {
 				healthbar_enabled = true,
 				healthbar_color = {0.564706, 0.933333, 0.564706, 1},
 				healthbar_color_by_hp = false,
+				castbar_offset_x = 0,
 				castbar_offset = 0, --not used?
 				
 				castbar_enabled = true,
@@ -493,10 +537,47 @@ PLATER_DEFAULT_SETTINGS = {
 
 			},
 		},
-		
+
 		login_counter = 0,
-		
-		spell_prediction = {
+
+		--plater resources bar ~resources
+		resources_settings = {
+			chr = {}, --store which resource model is used on each character
+			global_settings = {
+				show = false, --if the resource bar from plater is enabled
+				personal_bar = false, --if the resource bar shows in the personal bar intead of the current target
+				align = "horizontal", --combo points are horizontal alignment
+				grow_direction = "center",
+				show_depleted = true,
+				show_number = false,
+				anchor = {side = 8, x = 0, y = 40},
+				scale = 0.8,
+				padding = 2,
+			},
+			resource_options = {
+				--names below are from Enum.PowerType[<resource name>]
+				["ComboPoints"] = {
+
+				},
+				["HolyPower"] = {
+
+				},
+				["Runes"] = {
+
+				},
+				["SoulShards"] = {
+
+				},
+				["Chi"] = {
+
+				},
+				["ArcaneCharges"] =  {
+
+				},
+			},
+		},
+
+		spell_prediction = { --not being used at the moment
 			enabled = false,
 			castbar_height = 12,
 
@@ -506,10 +587,24 @@ PLATER_DEFAULT_SETTINGS = {
 		transparency_behavior = 0x1,
 		transparency_behavior_use_division = false,
 		non_targeted_alpha_enabled = false,
+		transparency_behavior_on_enemies = true,
+		honor_blizzard_plate_alpha = false,
+		focus_as_target_alpha = false,
+		
+		
+		transparency_behavior_on_friendlies = false,
 		
 		quick_hide = false, --hide the nameplate when the unit hits 0 health points | making disabled by default, this maybe is bugging hunters FD
 		
+		show_healthbars_on_not_attackable = false,
+		
 		enable_masque_support = false,
+		
+		use_name_translit = false,
+		
+		use_player_combat_state = false,
+		
+		shadowMode = 1,
 		
 		last_news_time = 0,
 		disable_omnicc_on_auras = false,
@@ -517,10 +612,8 @@ PLATER_DEFAULT_SETTINGS = {
 		show_health_prediction = true,
 		show_shield_prediction = true,
 		
-		resource_on_target = true,
-		
 		show_interrupt_author = true,
-		
+
 		customdesign = {
 			healthbar_enabled = false,
 			healthbar_file = "interface\\addons\\plater\\images\\healthbar\\round_base",
@@ -549,12 +642,14 @@ PLATER_DEFAULT_SETTINGS = {
 		use_ui_parent_just_enabled = false,
 		ui_parent_base_strata = "BACKGROUND",
 		ui_parent_buff_strata = "BACKGROUND", --testing, buffs should be in front of the health bar
-		ui_parent_buff2_strata = "BACKGROUND", 
+		ui_parent_buff2_strata = "BACKGROUND",
+		ui_parent_buff_special_strata = "BACKGROUND",
 		ui_parent_cast_strata = "BACKGROUND", --testing, the castbar should be in front of everythings
 		ui_parent_target_strata = "LOW", --testing, the current target nameplate should be in this strata
-		ui_parent_buff_level = 10,
-		ui_parent_buff2_level = 10, 
-		ui_parent_cast_level = 10,
+		ui_parent_buff_level = 0,
+		ui_parent_buff2_level = 0,
+		ui_parent_buff_special_level = 0,
+		ui_parent_cast_level = 0,
 		ui_parent_scale_tune = 0, --testing, a slider to change the unit frame scale / goal is to have a fine tune knob to adjust the overall size when using this feature
 		
 		resources = {
@@ -571,9 +666,16 @@ PLATER_DEFAULT_SETTINGS = {
 		minor_width_scale = 0.9,
 		minor_height_scale = 0.95,
 		
+		--> widget settings
+		usePlaterWidget = false,
+		widget_bar_scale = 0.75,
+		widget_bar_anchor = {side = 4, x = 0, y = 0},
+		
 		no_spellname_length_limit = false,
 		
+		--> castbar target name
 		castbar_target_show = false,
+		castbar_target_notank = false,
 		castbar_target_anchor = {side = 5, x = 0, y = 0},
 		castbar_target_text_size = 10,
 		castbar_target_outline = "OUTLINE",
@@ -581,9 +683,18 @@ PLATER_DEFAULT_SETTINGS = {
 		castbar_target_shadow_color_offset = {1, -1},
 		castbar_target_color = {0.968627, 0.992156, 1, 1},
 		castbar_target_font = "Arial Narrow",
+
+		--> castbar icon
+		castbar_icon_customization_enabled = true,
+		castbar_icon_show = true,
+		castbar_icon_attach_to_side = "left", --"right"
+		castbar_icon_size = "same as castbar", --"same as castbar plus healthbar"
+		castbar_icon_x_offset = 0,
+		
 		
 		--> store spells from the latest event the player has been into
 		captured_spells = {},
+		captured_casts = {},
 
 		--script tab
 		script_data = {},
@@ -600,10 +711,11 @@ PLATER_DEFAULT_SETTINGS = {
 		patch_version_profile = 0,
 		
 		health_cutoff = true,
+		health_cutoff_upper = true,
 		health_cutoff_extra_glow = false,
 		health_cutoff_hide_divisor = false,
 		
-		update_throttle = 0.25,
+		update_throttle = 0.120,
 		culling_distance = 100,
 		use_playerclass_color = true, --friendly player
 		
@@ -631,10 +743,13 @@ PLATER_DEFAULT_SETTINGS = {
 		aura_height = 16,
 		aura_width2 = 26,
 		aura_height2 = 16,
+		auras_per_row_auto = true,
+		auras_per_row_amount = 10,
+		auras_per_row_amount2 = 10,
 		
 		--> aura frame 1
 		--aura_x_offset = 0,
-		--aura_y_offset = 0,
+		--aura_y_offset = 5,
 		aura_grow_direction = 2, --> center
 		aura_frame1_anchor = {side = 8, x = 0, y = 5}, -- in sync with aura_x_offset and aura_y_offset to be compatible to scripts...
 		aura_breakline_space = 12, --space between the first and second line when the aura break line
@@ -642,13 +757,14 @@ PLATER_DEFAULT_SETTINGS = {
 		--> aura frame 2
 		buffs_on_aura2 = false,
 		--aura2_x_offset = 0,
-		--aura2_y_offset = 0,
+		--aura2_y_offset = 5,
 		aura2_grow_direction = 2, --> center
 		aura_frame2_anchor = {side = 8, x = 0, y = 5}, -- in sync with aura_x_offset and aura_y_offset to be compatible to scripts...
 		
 		aura_padding = 1, --space between each icon
 		aura_consolidate = false, --aura icons shown with the same name is stacked into only one
 		aura_consolidate_timeleft_lower = true, --when stacking auras with the same name, show the time left for the aura with the lesser remaining time
+		aura_sort = false, -- sort auras via sort function -> default by time left
 		
 		aura_alpha = 0.85,
 		aura_custom = {},
@@ -670,14 +786,23 @@ PLATER_DEFAULT_SETTINGS = {
 		aura_stack_shadow_color_offset = {1, -1},
 		aura_stack_color = {1, 1, 1, 1},
 		
-		extra_icon_anchor = {side = 6, x = -4, y = 4},
+		extra_icon_anchor = {side = 6, x = -4, y = 0},
 		extra_icon_show_timer = true,
+		extra_icon_timer_font = "Arial Narrow",
+		extra_icon_timer_size = 12,
+		extra_icon_timer_outline = "NONE",
 		extra_icon_width = 30,
 		extra_icon_height = 18,
 		extra_icon_wide_icon = true,
 		extra_icon_use_blizzard_border_color = true,
 		extra_icon_caster_name = true,
+		extra_icon_caster_font = "Arial Narrow",
+		extra_icon_caster_size = 7,
+		extra_icon_caster_outline = "NONE",
 		extra_icon_show_stacks = true,
+		extra_icon_stack_font = "Arial Narrow",
+		extra_icon_stack_size = 10,
+		extra_icon_stack_outline = "NONE",
 		extra_icon_backdrop_color = {0, 0, 0, 0.612853},
 		extra_icon_border_color = {0, 0, 0, 1},
 		
@@ -686,7 +811,12 @@ PLATER_DEFAULT_SETTINGS = {
 		extra_icon_show_purge = false, --extra frame show purge
 		extra_icon_show_purge_border = {0, .925, 1, 1},
 		extra_icon_show_enrage = false, --extra frame show purge
+		extra_icon_show_magic = false,
 		extra_icon_show_enrage_border = {0.85, 0.2, 0.1, 1},
+		extra_icon_show_offensive = false,
+		extra_icon_show_offensive_border = {0, .65, .1, 1},
+		extra_icon_show_defensive = false,
+		extra_icon_show_defensive_border = {.85, .45, .1, 1},
 		
 		extra_icon_auras = {}, --auras for buff special tab
 		extra_icon_auras_mine = {}, --auras in the buff special that are only cast by the player
@@ -700,16 +830,23 @@ PLATER_DEFAULT_SETTINGS = {
 		aura_show_important = true,
 		aura_show_dispellable = true,
 		aura_show_enrage = false,
+		aura_show_magic = false,
 		aura_show_aura_by_the_player = true,
+		aura_show_aura_by_other_players = false,
 		aura_show_buff_by_the_unit = true,
-		aura_show_enemy_buffs = false,
 		aura_border_colors_by_type = false,
+		aura_show_crowdcontrol = false,
+		aura_show_offensive_cd = false,
+		aura_show_defensive_cd = false,
 		
 		aura_border_colors = {
 			steal_or_purge = {0, .5, .98, 1},
 			enrage = {0.85, 0.2, 0.1, 1},
 			is_buff = {0, .65, .1, 1},
 			is_show_all = {.7, .1, .1, 1},
+			defensive = {.85, .45, .1, 1},
+			offensive = {0, .65, .1, 1},
+			crowdcontrol = {.3, .2, .2, 1},
 		},
 		
 		--store a table with spell name keys and with a value of a table with all spell IDs that has that exact name
@@ -723,7 +860,10 @@ PLATER_DEFAULT_SETTINGS = {
 			["banner of the alliance"] = {
 				61573,
 			},
-		},		
+			["breath of coldheart"] = {
+				333553,
+			},
+		},
 		
 		aura_tracker = {
 			buff = {},
@@ -732,12 +872,14 @@ PLATER_DEFAULT_SETTINGS = {
 			debuff_ban_percharacter = {},
 			options = {},
 			track_method = 0x1,
-			buff_banned = { 
+			buff_banned = {
 				--banner of alliance and horde on training dummies
-				[61574] = true, 
+				[61574] = true,
 				[61573] = true,
 				--challenger's might on mythic+
-				[206150] = true, 
+				[206150] = true,
+				--breath of coldheart (torghast)
+				[333553] = true,
 			},
 			debuff_banned = {},
 			buff_tracked = {},
@@ -753,7 +895,7 @@ PLATER_DEFAULT_SETTINGS = {
 		
 		not_affecting_combat_enabled = false,
 		not_affecting_combat_alpha = 0.6,
-		
+
 		range_check_enabled = true,
 		range_check_alpha = 0.65, --overall as it set in the unitFrame
 		range_check_health_bar_alpha = 1,
@@ -761,6 +903,13 @@ PLATER_DEFAULT_SETTINGS = {
 		range_check_buffs_alpha = 1,
 		range_check_power_bar_alpha = 1,
 		range_check_in_range_or_target_alpha = 0.9, 
+		
+		range_check_alpha_friendlies = 0.65, --overall as it set in the unitFrame
+		range_check_health_bar_alpha_friendlies = 1,
+		range_check_cast_bar_alpha_friendlies = 1,
+		range_check_buffs_alpha_friendlies = 1,
+		range_check_power_bar_alpha_friendlies = 1,
+		range_check_in_range_or_target_alpha_friendlies = 0.9,
 		
 		target_highlight = true,
 		target_highlight_alpha = 0.75,
@@ -795,10 +944,100 @@ PLATER_DEFAULT_SETTINGS = {
 			["world"] =  true,
 			["cities"] = false,
 		},
-		
+
+		auto_inside_raid_dungeon = {
+			hide_enemy_player_pets = false,
+			hide_enemy_player_totems = false,
+		},
+
 		spell_animations = true,
 		spell_animations_scale = 1.25,
-		
+
+		--hold the npcs that has been rename on the Npcs tab, format: [npcId] = "new npc name"
+		npcs_renamed = {},
+
+		ghost_auras = {
+			enabled = false,
+			width = 0,
+			height = 0,
+			alpha = 0.5,
+			desaturated = true,
+			auras = {
+				["DEMONHUNTER"] = {
+					[0] = {},
+					[1] = {},
+					[2] = {},
+				},
+				["DEATHKNIGHT"] = {
+					[0] = {},
+					[1] = {},
+					[2] = {},
+					[3] = {},
+				},
+				["WARRIOR"] = {
+					[0] = {},
+					[1] = {},
+					[2] = {},
+					[3] = {},
+				},
+				["MAGE"] = {
+					[0] = {},
+					[1] = {},
+					[2] = {},
+					[3] = {},
+				},
+				["ROGUE"] = {
+					[0] = {},
+					[1] = {},
+					[2] = {},
+					[3] = {},
+				},
+				["DRUID"] = {
+					[0] = {},
+					[1] = {},
+					[2] = {},
+					[3] = {},
+					[4] = {},
+				},
+				["HUNTER"] = {
+					[0] = {},
+					[1] = {},
+					[2] = {},
+					[3] = {},
+				},
+				["SHAMAN"] = {
+					[0] = {},
+					[1] = {},
+					[2] = {},
+					[3] = {},
+				},
+				["PRIEST"] = {
+					[0] = {},
+					[1] = {},
+					[2] = {},
+					[3] = {},
+				},
+				["WARLOCK"] = {
+					[0] = {},
+					[1] = {},
+					[2] = {},
+					[3] = {},
+				},
+				["PALADIN"] = {
+					[0] = {},
+					[1] = {},
+					[2] = {},
+					[3] = {},
+				},
+				["MONK"] = {
+					[0] = {},
+					[1] = {},
+					[2] = {},
+					[3] = {},
+				},
+			},
+		},
+
 		spell_animation_list = {
 		
 			--chaos bolt
@@ -2403,12 +2642,16 @@ PLATER_DEFAULT_SETTINGS = {
 		cast_statusbar_spark_color = {1, 1, 1, 1},
 		
 		indicator_faction = true,
+		indicator_friendlyfaction = false,
 		indicator_spec = true,
+		indicator_friendlyspec = false,
+		indicator_worldboss = true,
 		indicator_elite = true,
 		indicator_rare = true,
 		indicator_quest = true,
 		indicator_pet = true,
 		indicator_enemyclass = false,
+		indicator_friendlyclass = false,
 		indicator_anchor = {side = 2, x = -2, y = 0},
 		indicator_scale = 1,
 		
@@ -2432,7 +2675,7 @@ PLATER_DEFAULT_SETTINGS = {
 		focus_color = {0, 0, 0, 0.5},
 		focus_texture = "PlaterFocus",
 		
-		tap_denied_color = {.9, .9, .9},
+		tap_denied_color = {.9, .9, .9, 1},
 		
 		aggro_modifies = {
 			health_bar_color = true,
@@ -2443,24 +2686,29 @@ PLATER_DEFAULT_SETTINGS = {
 		aggro_can_check_notank = false,
 		tank_threat_colors = false,
 		
+		show_aggro_flash = false,
+		show_aggro_glow = true,
+		
 		tank = {
 			colors = {
-				aggro = {.5, .5, 1},
-				noaggro = {1, 0, 0},
-				pulling = {1, 1, 0},
-				nocombat = {0.505, 0.003, 0},
-				anothertank = {0.729, 0.917, 1},
-				pulling_from_tank = {1, .7, 0}, --color when a tank is pulling the aggro from another tank
+				aggro = {.5, .5, 1, 1},
+				noaggro = {1, 0, 0, 1},
+				pulling = {1, 1, 0, 1},
+				nocombat = {0.505, 0.003, 0, 1},
+				anothertank = {0.729, 0.917, 1, 1},
+				pulling_from_tank = {1, .7, 0, 1}, --color when a tank is pulling the aggro from another tank
 			},
 		},
 		
 		dps = {
 			colors = {
-				aggro = {1, 0.109803, 0},
-				noaggro = {.5, .5, 1},
-				pulling = {1, .8, 0},
-				notontank = {.5, .5, 1}, --color inside dungeon when the mob is not in the tank aggro and not on the player
+				aggro = {1, 0.109803, 0, 1},
+				solo = {.5, .5, 1, 1},
+				noaggro = {.5, .5, 1, 1},
+				pulling = {1, .8, 0, 1},
+				notontank = {.5, .5, 1, 1}, --color inside dungeon when the mob is not in the tank aggro and not on the player
 			},
+			use_aggro_solo = false,
 		},
 		
 		news_frame = {},

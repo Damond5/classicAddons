@@ -1,4 +1,5 @@
 if not WeakAuras.IsCorrectVersion() then return end
+local AddonName, Private = ...
 
 local WeakAuras = WeakAuras;
 local L = WeakAuras.L;
@@ -115,14 +116,19 @@ end
 
 local screenWidth, screenHeight = math.ceil(GetScreenWidth() / 20) * 20, math.ceil(GetScreenHeight() / 20) * 20;
 
-function WeakAuras.GetAnchorsForData(parentData, type)
+function Private.GetAnchorsForData(parentData, type)
   local result
   if not parentData.controlledChildren then
-    if not WeakAuras.regionOptions[parentData.regionType] or not WeakAuras.regionOptions[parentData.regionType].getAnchors then
+    if not WeakAuras.regionOptions[parentData.regionType] then
       return
     end
 
-    local anchors = WeakAuras.regionOptions[parentData.regionType].getAnchors(parentData)
+    local anchors
+    if WeakAuras.regionOptions[parentData.regionType].getAnchors then
+      anchors = WeakAuras.regionOptions[parentData.regionType].getAnchors(parentData)
+    else
+      anchors = Private.default_types_for_anchor
+    end
     for anchorId, anchorData in pairs(anchors) do
       if anchorData.type == type then
         result = result or {}
@@ -131,23 +137,6 @@ function WeakAuras.GetAnchorsForData(parentData, type)
     end
   end
   return result
-end
-
-function WeakAuras.regionPrototype:AnchorSubRegion(subRegion, anchorType, selfPoint, anchorPoint, anchorXOffset, anchorYOffset)
-  subRegion:ClearAllPoints()
-
-  if anchorType == "point" then
-    local xOffset = anchorXOffset or 0
-    local yOffset = anchorYOffset or 0
-    subRegion:SetPoint(WeakAuras.point_types[selfPoint] and selfPoint or "CENTER",
-                       self, WeakAuras.point_types[anchorPoint] and anchorPoint or "CENTER",
-                       xOffset, yOffset)
-  else
-    anchorXOffset = anchorXOffset or 0
-    anchorYOffset = anchorYOffset or 0
-    subRegion:SetPoint("bottomleft", self, "bottomleft", -anchorXOffset, -anchorYOffset)
-    subRegion:SetPoint("topright", self, "topright", anchorXOffset,  anchorYOffset)
-  end
 end
 
 -- Sound / Chat Message / Custom Code
@@ -203,33 +192,33 @@ function WeakAuras.regionPrototype.AddProperties(properties, defaultsForRegion)
 end
 
 local function SoundRepeatStop(self)
-  WeakAuras.StartProfileSystem("sound");
+  Private.StartProfileSystem("sound");
   if (self.soundRepeatTimer) then
     WeakAuras.timer:CancelTimer(self.soundRepeatTimer);
     self.soundRepeatTimer = nil;
   end
-  WeakAuras.StopProfileSystem("sound");
+  Private.StopProfileSystem("sound");
 end
 
 local function SoundStop(self)
-  WeakAuras.StartProfileSystem("sound");
+  Private.StartProfileSystem("sound");
   if (self.soundHandle) then
     StopSound(self.soundHandle);
   end
-  WeakAuras.StopProfileSystem("sound");
+  Private.StopProfileSystem("sound");
 end
 
 local function SoundPlayHelper(self)
-  WeakAuras.StartProfileSystem("sound");
+  Private.StartProfileSystem("sound");
   local options = self.soundOptions;
   self.soundHandle = nil;
   if (not options or options.sound_type == "Stop") then
-    WeakAuras.StopProfileSystem("sound");
+    Private.StopProfileSystem("sound");
     return;
   end
 
-  if (WeakAuras.IsOptionsOpen() or WeakAuras.SquelchingActions() or WeakAuras.InLoadingScreen()) then
-    WeakAuras.StopProfileSystem("sound");
+  if (WeakAuras.IsOptionsOpen() or Private.SquelchingActions() or WeakAuras.InLoadingScreen()) then
+    Private.StopProfileSystem("sound");
     return;
   end
 
@@ -253,14 +242,14 @@ local function SoundPlayHelper(self)
       self.soundHandle = handle;
     end
   end
-  WeakAuras.StopProfileSystem("sound");
+  Private.StopProfileSystem("sound");
 end
 
 local function SoundPlay(self, options)
   if (not options or WeakAuras.IsOptionsOpen()) then
     return
   end
-  WeakAuras.StartProfileSystem("sound");
+  Private.StartProfileSystem("sound");
   self:SoundStop();
   self:SoundRepeatStop();
 
@@ -268,25 +257,24 @@ local function SoundPlay(self, options)
   SoundPlayHelper(self);
 
   local loop = options.do_loop or options.sound_type == "Loop";
-  if (loop and options.sound_repeat and options.sound_repeat < WeakAuras.maxTimerDuration) then
+  if (loop and options.sound_repeat and options.sound_repeat < Private.maxTimerDuration) then
     self.soundRepeatTimer = WeakAuras.timer:ScheduleRepeatingTimer(SoundPlayHelper, options.sound_repeat, self);
   end
-  WeakAuras.StopProfileSystem("sound");
+  Private.StopProfileSystem("sound");
 end
 
 local function SendChat(self, options)
   if (not options or WeakAuras.IsOptionsOpen()) then
     return
   end
-
-  WeakAuras.HandleChatAction(options.message_type, options.message, options.message_dest, options.message_channel, options.r, options.g, options.b, self, options.message_custom, nil, options.message_formaters);
+  Private.HandleChatAction(options.message_type, options.message, options.message_dest, options.message_channel, options.r, options.g, options.b, self, options.message_custom, nil, options.message_formaters, options.message_voice);
 end
 
 local function RunCode(self, func)
   if func and not WeakAuras.IsOptionsOpen() then
-    WeakAuras.ActivateAuraEnvironment(self.id, self.cloneId, self.state, self.states);
+    Private.ActivateAuraEnvironment(self.id, self.cloneId, self.state, self.states);
     xpcall(func, geterrorhandler());
-    WeakAuras.ActivateAuraEnvironment(nil);
+    Private.ActivateAuraEnvironment(nil);
   end
 end
 
@@ -294,7 +282,7 @@ local function GlowExternal(self, options)
   if (not options or WeakAuras.IsOptionsOpen()) then
     return
   end
-  WeakAuras.HandleGlowAction(options, self)
+  Private.HandleGlowAction(options, self)
 end
 
 local function UpdatePosition(self)
@@ -392,11 +380,7 @@ local function SetRegionAlpha(self, alpha)
   end
 
   self.alpha = alpha;
-  if (WeakAuras.IsOptionsOpen()) then
-    self:SetAlpha(max(self.animAlpha or self.alpha or 1, 0.5));
-  else
-    self:SetAlpha(self.animAlpha or self.alpha or 1);
-  end
+  self:SetAlpha(self.animAlpha or self.alpha or 1);
   self.subRegionEvents:Notify("AlphaChanged")
 end
 
@@ -439,11 +423,23 @@ local function UpdateRegionHasTimerTick(self)
   self:UpdateTimerTick()
 end
 
+local function TimerTickForRegion(region)
+  Private.StartProfileSystem("timer tick")
+  Private.StartProfileAura(region.id);
+  if region.TimerTick then
+    region:TimerTick();
+  end
+
+  region.subRegionEvents:Notify("TimerTick")
+  Private.StopProfileAura(region.id);
+  Private.StopProfileSystem("timer tick")
+end
+
 local function UpdateTimerTick(self)
-  if self.triggerProvidesTimer and self.regionHasTimer then
+  if self.triggerProvidesTimer and self.regionHasTimer and self.toShow then
     if not self:GetScript("OnUpdate") then
       self:SetScript("OnUpdate", function()
-        WeakAuras.TimerTick(self)
+        TimerTickForRegion(self)
       end);
     end
   else
@@ -453,7 +449,27 @@ local function UpdateTimerTick(self)
   end
 end
 
+local function AnchorSubRegion(self, subRegion, anchorType, selfPoint, anchorPoint, anchorXOffset, anchorYOffset)
+  subRegion:ClearAllPoints()
+
+  if anchorType == "point" then
+    local xOffset = anchorXOffset or 0
+    local yOffset = anchorYOffset or 0
+    subRegion:SetPoint(Private.point_types[selfPoint] and selfPoint or "CENTER",
+                       self, Private.point_types[anchorPoint] and anchorPoint or "CENTER",
+                       xOffset, yOffset)
+  else
+    anchorXOffset = anchorXOffset or 0
+    anchorYOffset = anchorYOffset or 0
+    subRegion:SetPoint("bottomleft", self, "bottomleft", -anchorXOffset, -anchorYOffset)
+    subRegion:SetPoint("topright", self, "topright", anchorXOffset,  anchorYOffset)
+  end
+end
+
+WeakAuras.regionPrototype.AnchorSubRegion = AnchorSubRegion
+
 function WeakAuras.regionPrototype.create(region)
+  local defaultsForRegion = WeakAuras.regionTypes[region.regionType] and WeakAuras.regionTypes[region.regionType].default;
   region.SoundPlay = SoundPlay;
   region.SoundStop = SoundStop;
   region.SoundRepeatStop = SoundRepeatStop;
@@ -479,8 +495,10 @@ function WeakAuras.regionPrototype.create(region)
     region:RealClearAllPoints();
     region:ResetPosition();
   end
-  region.SetRegionAlpha = SetRegionAlpha;
-  region.GetRegionAlpha = GetRegionAlpha;
+  if (defaultsForRegion and defaultsForRegion.alpha) then
+    region.SetRegionAlpha = SetRegionAlpha;
+    region.GetRegionAlpha = GetRegionAlpha;
+  end
   region.SetAnimAlpha = SetAnimAlpha;
 
   region.SetTriggerProvidesTimer = SetTriggerProvidesTimer
@@ -488,6 +506,8 @@ function WeakAuras.regionPrototype.create(region)
   region.UpdateTimerTick = UpdateTimerTick
 
   region.subRegionEvents = CreateSubRegionEventSystem()
+  region.AnchorSubRegion = AnchorSubRegion
+  region.values = {} -- For SubText
 
   region:SetPoint("CENTER", UIParent, "CENTER")
 end
@@ -498,9 +518,11 @@ function WeakAuras.regionPrototype.modify(parent, region, data)
   region.subRegionEvents:ClearSubscribers()
 
   local defaultsForRegion = WeakAuras.regionTypes[data.regionType] and WeakAuras.regionTypes[data.regionType].default;
-  if (defaultsForRegion and defaultsForRegion.alpha) then
-    region:SetRegionAlpha(data.alpha);
+
+  if region.SetRegionAlpha then
+    region:SetRegionAlpha(data.alpha)
   end
+
   local hasAdjustedMin = defaultsForRegion and defaultsForRegion.useAdjustededMin ~= nil and data.useAdjustededMin
         and data.adjustedMin;
   local hasAdjustedMax = defaultsForRegion and defaultsForRegion.useAdjustededMax ~= nil and data.useAdjustededMax
@@ -554,25 +576,25 @@ function WeakAuras.regionPrototype.modify(parent, region, data)
       or data.regionType == "dynamicgroup"
       or data.regionType == "group"
     then
-      WeakAuras.AnchorFrame(data, region, parent);
+      Private.AnchorFrame(data, region, parent);
     end
   end
 
-  region.startFormatters = WeakAuras.CreateFormatters(data.actions.start.message, function(key, default)
+  region.startFormatters = Private.CreateFormatters(data.actions.start.message, function(key, default)
     local fullKey = "message_format_" .. key
     if data.actions.start[fullKey] == nil then
       data.actions.start[fullKey] = default
     end
     return data.actions.start[fullKey]
-  end)
+  end, true)
 
-  region.finishFormatters = WeakAuras.CreateFormatters(data.actions.finish.message, function(key, default)
+  region.finishFormatters = Private.CreateFormatters(data.actions.finish.message, function(key, default)
     local fullKey = "message_format_" .. key
     if data.actions.finish[fullKey] == nil then
       data.actions.finish[fullKey] = default
     end
     return data.actions.finish[fullKey]
-  end)
+  end, true)
 
 end
 
@@ -580,7 +602,7 @@ function WeakAuras.regionPrototype.modifyFinish(parent, region, data)
   -- Sync subRegions
   if region.subRegions then
     for index, subRegion in pairs(region.subRegions) do
-      WeakAuras.subRegionTypes[subRegion.type].release(subRegion)
+      Private.subRegionTypes[subRegion.type].release(subRegion)
     end
 
     wipe(region.subRegions)
@@ -590,12 +612,12 @@ function WeakAuras.regionPrototype.modifyFinish(parent, region, data)
     region.subRegions = region.subRegions or {}
     local subRegionTypes = {}
     for index, subRegionData in pairs(data.subRegions) do
-      if WeakAuras.subRegionTypes[subRegionData.type] then
-        local subRegion = WeakAuras.subRegionTypes[subRegionData.type].acquire()
+      if Private.subRegionTypes[subRegionData.type] then
+        local subRegion = Private.subRegionTypes[subRegionData.type].acquire()
         subRegion.type = subRegionData.type
 
         if subRegion then
-          WeakAuras.subRegionTypes[subRegionData.type].modify(region, subRegion, data, subRegionData, not subRegionTypes[subRegionData.type])
+          Private.subRegionTypes[subRegionData.type].modify(region, subRegion, data, subRegionData, not subRegionTypes[subRegionData.type])
           subRegionTypes[subRegionData.type] = true
         end
 
@@ -606,7 +628,7 @@ function WeakAuras.regionPrototype.modifyFinish(parent, region, data)
 
   region:UpdateRegionHasTimerTick()
 
-  WeakAuras.ApplyFrameLevel(region)
+  Private.ApplyFrameLevel(region)
 end
 
 local function SetProgressValue(region, value, total)
@@ -616,25 +638,29 @@ local function SetProgressValue(region, value, total)
   region:SetValue(value - adjustMin, max - adjustMin);
 end
 
-function WeakAuras.TimerTick(region)
-  WeakAuras.StartProfileSystem("timer tick")
-  WeakAuras.StartProfileAura(region.id);
-  if region.TimerTick then
-    region:TimerTick();
-  end
-
-  region.subRegionEvents:Notify("TimerTick")
-  WeakAuras.StopProfileAura(region.id);
-  WeakAuras.StopProfileSystem("timer tick")
-end
-
 local regionsForFrameTick = {}
 
 local frameForFrameTick = CreateFrame("FRAME");
 
 WeakAuras.frames["Frame Tick Frame"] = frameForFrameTick
 
-function WeakAuras.RegisterForFrameTick(region)
+local function FrameTick()
+  if WeakAuras.IsOptionsOpen() then
+    return
+  end
+  Private.StartProfileSystem("frame tick")
+  for region in pairs(regionsForFrameTick) do
+    Private.StartProfileAura(region.id);
+    if region.FrameTick then
+      region.FrameTick()
+    end
+    region.subRegionEvents:Notify("FrameTick")
+    Private.StopProfileAura(region.id);
+  end
+  Private.StopProfileSystem("frame tick")
+end
+
+local function RegisterForFrameTick(region)
   -- Check for a Frame Tick function
   local hasFrameTick = region.FrameTick
   if not hasFrameTick then
@@ -654,34 +680,18 @@ function WeakAuras.RegisterForFrameTick(region)
 
   regionsForFrameTick[region] = true
   if not frameForFrameTick:GetScript("OnUpdate") then
-    frameForFrameTick:SetScript("OnUpdate", WeakAuras.FrameTick);
+    frameForFrameTick:SetScript("OnUpdate", FrameTick);
   end
 end
 
-function WeakAuras.UnRegisterForFrameTick(region)
+local function UnRegisterForFrameTick(region)
   regionsForFrameTick[region] = nil
   if not next(regionsForFrameTick) then
     frameForFrameTick:SetScript("OnUpdate", nil)
   end
 end
 
-function WeakAuras.FrameTick()
-  if WeakAuras.IsOptionsOpen() then
-    return
-  end
-  WeakAuras.StartProfileSystem("frame tick")
-  for region in pairs(regionsForFrameTick) do
-    WeakAuras.StartProfileAura(region.id);
-    if region.FrameTick then
-      region.FrameTick()
-    end
-    region.subRegionEvents:Notify("FrameTick")
-    WeakAuras.StopProfileAura(region.id);
-  end
-  WeakAuras.StopProfileSystem("frame tick")
-end
-
-local function TimerTick(self)
+local function TimerTickForSetDuration(self)
   local duration = self.duration
   local adjustMin = self.adjustedMin or 0;
 
@@ -716,7 +726,7 @@ function WeakAuras.regionPrototype.AddSetDurationInfo(region)
         local adjustMin = region.adjustedMin or 0;
         region:SetTime((duration ~= 0 and region.adjustedMax or duration) - adjustMin, expirationTime - adjustMin, inverse);
 
-        region.TimerTick = TimerTick
+        region.TimerTick = TimerTickForSetDuration
         region:UpdateRegionHasTimerTick()
       end
     end
@@ -728,12 +738,13 @@ end
 
 -- Expand/Collapse function
 function WeakAuras.regionPrototype.AddExpandFunction(data, region, cloneId, parent, parentRegionType)
+  local uid = data.uid
   local id = data.id
   local inDynamicGroup = parentRegionType == "dynamicgroup";
   local inGroup = parentRegionType == "group";
 
   local startMainAnimation = function()
-    WeakAuras.Animate("display", data, "main", data.animation.main, region, false, nil, true, cloneId);
+    Private.Animate("display", uid, "main", data.animation.main, region, false, nil, true, cloneId);
   end
 
   function region:OptionsClosed()
@@ -757,12 +768,14 @@ function WeakAuras.regionPrototype.AddExpandFunction(data, region, cloneId, pare
       if region.PreHide then
         region:PreHide()
       end
-      if WeakAuras.checkConditions[id] then
-        WeakAuras.checkConditions[id](region, true);
-      end
+
+      Private.RunConditions(region, uid, true)
+      region.subRegionEvents:Notify("PreHide")
       region:Hide();
+      region.states = nil
+      region.state = nil
       if (cloneId) then
-        WeakAuras.ReleaseClone(region.id, cloneId, data.regionType);
+        Private.ReleaseClone(region.id, cloneId, data.regionType);
         parent:RemoveChild(id, cloneId)
       else
         parent:DeactivateChild(id, cloneId);
@@ -773,12 +786,13 @@ function WeakAuras.regionPrototype.AddExpandFunction(data, region, cloneId, pare
       if region.PreHide then
         region:PreHide()
       end
-      if WeakAuras.checkConditions[id] then
-        WeakAuras.checkConditions[id](region, true);
-      end
+      Private.RunConditions(region, uid, true)
+      region.subRegionEvents:Notify("PreHide")
       region:Hide();
+      region.states = nil
+      region.state = nil
       if (cloneId) then
-        WeakAuras.ReleaseClone(region.id, cloneId, data.regionType);
+        Private.ReleaseClone(region.id, cloneId, data.regionType);
       end
     end
   end
@@ -791,8 +805,8 @@ function WeakAuras.regionPrototype.AddExpandFunction(data, region, cloneId, pare
       region.toShow = false;
       region:SetScript("OnUpdate", nil)
 
-      WeakAuras.PerformActions(data, "finish", region);
-      if (not WeakAuras.Animate("display", data, "finish", data.animation.finish, region, false, hideRegion, nil, cloneId)) then
+      Private.PerformActions(data, "finish", region);
+      if (not Private.Animate("display", data.uid, "finish", data.animation.finish, region, false, hideRegion, nil, cloneId)) then
         hideRegion();
       end
 
@@ -800,7 +814,8 @@ function WeakAuras.regionPrototype.AddExpandFunction(data, region, cloneId, pare
         region:SoundRepeatStop();
       end
 
-      WeakAuras.UnRegisterForFrameTick(region)
+      UnRegisterForFrameTick(region)
+      region:UpdateTimerTick()
     end
     function region:Expand()
       if (region.toShow) then
@@ -813,16 +828,15 @@ function WeakAuras.regionPrototype.AddExpandFunction(data, region, cloneId, pare
 
       region.subRegionEvents:Notify("PreShow")
 
-      region.justCreated = nil;
-      WeakAuras.ApplyFrameLevel(region)
+      Private.ApplyFrameLevel(region)
       region:Show();
-      WeakAuras.PerformActions(data, "start", region);
-      if not(WeakAuras.Animate("display", data, "start", data.animation.start, region, true, startMainAnimation, nil, cloneId)) then
+      Private.PerformActions(data, "start", region);
+      if not(Private.Animate("display", data.uid, "start", data.animation.start, region, true, startMainAnimation, nil, cloneId)) then
         startMainAnimation();
       end
       parent:ActivateChild(data.id, cloneId);
 
-      WeakAuras.RegisterForFrameTick(region)
+      RegisterForFrameTick(region)
       region:UpdateTimerTick()
     end
   elseif not(data.controlledChildren) then
@@ -833,8 +847,8 @@ function WeakAuras.regionPrototype.AddExpandFunction(data, region, cloneId, pare
       region.toShow = false;
       region:SetScript("OnUpdate", nil)
 
-      WeakAuras.PerformActions(data, "finish", region);
-      if (not WeakAuras.Animate("display", data, "finish", data.animation.finish, region, false, hideRegion, nil, cloneId)) then
+      Private.PerformActions(data, "finish", region);
+      if (not Private.Animate("display", data.uid, "finish", data.animation.finish, region, false, hideRegion, nil, cloneId)) then
         hideRegion();
       end
 
@@ -846,7 +860,8 @@ function WeakAuras.regionPrototype.AddExpandFunction(data, region, cloneId, pare
         region:SoundRepeatStop();
       end
 
-      WeakAuras.UnRegisterForFrameTick(region)
+      UnRegisterForFrameTick(region)
+      region:UpdateTimerTick()
     end
     function region:Expand()
       if data.anchorFrameType == "SELECTFRAME"
@@ -854,7 +869,7 @@ function WeakAuras.regionPrototype.AddExpandFunction(data, region, cloneId, pare
       or data.anchorFrameType == "UNITFRAME"
       or data.anchorFrameType == "NAMEPLATE"
       then
-        WeakAuras.AnchorFrame(data, region, parent);
+        Private.AnchorFrame(data, region, parent);
       end
 
       if (region.toShow) then
@@ -862,17 +877,16 @@ function WeakAuras.regionPrototype.AddExpandFunction(data, region, cloneId, pare
       end
       region.toShow = true;
 
-      region.justCreated = nil;
       if(region.PreShow) then
         region:PreShow();
       end
 
       region.subRegionEvents:Notify("PreShow")
 
-      WeakAuras.ApplyFrameLevel(region)
+      Private.ApplyFrameLevel(region)
       region:Show();
-      WeakAuras.PerformActions(data, "start", region);
-      if not(WeakAuras.Animate("display", data, "start", data.animation.start, region, true, startMainAnimation, nil, cloneId)) then
+      Private.PerformActions(data, "start", region);
+      if not(Private.Animate("display", data.uid, "start", data.animation.start, region, true, startMainAnimation, nil, cloneId)) then
         startMainAnimation();
       end
 
@@ -880,7 +894,7 @@ function WeakAuras.regionPrototype.AddExpandFunction(data, region, cloneId, pare
         parent:UpdateBorder(region);
       end
 
-      WeakAuras.RegisterForFrameTick(region)
+      RegisterForFrameTick(region)
       region:UpdateTimerTick()
     end
   end
@@ -891,12 +905,77 @@ function WeakAuras.regionPrototype.AddExpandFunction(data, region, cloneId, pare
   if not region.Expand then
     function region:Expand() end
   end
+  if not region.Pause then
+    function region:Pause()
+      self.paused = true
+    end
+  end
+  if not region.Resume then
+    function region:Resume()
+      self.paused = nil
+    end
+  end
 end
 
 function WeakAuras.SetTextureOrAtlas(texture, path, wrapModeH, wrapModeV)
   if type(path) == "string" and GetAtlasInfo(path) then
     texture:SetAtlas(path);
   else
+    local needToClear = true
+    if (texture.wrapModeH and texture.wrapModeH ~= wrapModeH) or (texture.wrapModeV and texture.wrapModeV ~= wrapModeV) then
+      needToClear = true
+    end
+    texture.wrapModeH = wrapModeH
+    texture.wrapModeV = wrapModeV
+    if needToClear then
+      texture:SetTexture(nil)
+    end
     texture:SetTexture(path, wrapModeH, wrapModeV);
+  end
+end
+
+do
+  local function move_condition_subregions(data, offset, afterPos)
+    if data.conditions then
+      for conditionIndex, condition in ipairs(data.conditions) do
+        if type(condition.changes) == "table" then
+          for changeIndex, change in ipairs(condition.changes) do
+            if change.property then
+              local subRegionIndex, property = change.property:match("^sub%.(%d+)%.(.*)")
+              subRegionIndex = tonumber(subRegionIndex)
+              if subRegionIndex and property then
+                if (subRegionIndex >= afterPos) then
+                  change.property = "sub." .. subRegionIndex + offset .. "." .. property
+                end
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  function Private.EnforceSubregionExists(data, subregionType)
+    data.subRegions = data.subRegions or {}
+    -- search and save indexes of matching subregions
+    local indexes = {}
+    for index, subRegionData in ipairs(data.subRegions) do
+      if subRegionData.type == subregionType then
+        table.insert(indexes, index)
+      end
+    end
+    -- add if missing
+    if #indexes == 0 then
+      tinsert(data.subRegions, 1, {
+        ["type"] = subregionType
+      })
+      move_condition_subregions(data, 1, 1)
+    -- delete duplicate
+    elseif #indexes > 1 then
+      for i = #indexes, 2, -1 do
+        table.remove(data.subRegions, indexes[i])
+        move_condition_subregions(data, -1, indexes[i])
+      end
+    end
   end
 end

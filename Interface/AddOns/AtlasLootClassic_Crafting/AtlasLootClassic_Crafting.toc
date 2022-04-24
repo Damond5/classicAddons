@@ -1,6 +1,6 @@
-## Interface: 11305
+## Interface: 20503
 ## Author: Lag
-## Version: v1.5.6
+## Version: v2.4.2-bcc
 ## Dependencies: AtlasLootClassic
 ## LoadOnDemand: 1
 
@@ -35,3 +35,4 @@
 Locales\Locales.xml
 
 data.lua
+data-tbc.lua

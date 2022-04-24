@@ -124,7 +124,7 @@ M.filters = {
         input_type = 'money',
         validator = function(amount)
             return function(auction_record)
-                return history.value(auction_record.item_key) and history.value(auction_record.item_key) * auction_record.aux_quantity - auction_record.bid_price >= amount
+                return history.value(auction_record.item_key) and history.value(auction_record.item_key) * auction_record.count - auction_record.bid_price >= amount
             end
         end
     },
@@ -133,7 +133,7 @@ M.filters = {
         input_type = 'money',
         validator = function(amount)
             return function(auction_record)
-                return auction_record.buyout_price > 0 and history.value(auction_record.item_key) and history.value(auction_record.item_key) * auction_record.aux_quantity - auction_record.buyout_price >= amount
+                return auction_record.buyout_price > 0 and history.value(auction_record.item_key) and history.value(auction_record.item_key) * auction_record.count - auction_record.buyout_price >= amount
             end
         end
     },
@@ -143,7 +143,7 @@ M.filters = {
         validator = function(amount)
             return function(auction_record)
                 local item_info = info.item(auction_record.item_id)
-                local disenchant_value = item_info and disenchant.value(item_info.slot, item_info.quality, item_info.level)
+                local disenchant_value = item_info and disenchant.value(auction_record.item_id, item_info.slot, item_info.quality, item_info.level)
                 return disenchant_value and disenchant_value - auction_record.bid_price >= amount
             end
         end
@@ -154,7 +154,7 @@ M.filters = {
         validator = function(amount)
             return function(auction_record)
                 local item_info = info.item(auction_record.item_id)
-                local disenchant_value = item_info and disenchant.value(item_info.slot, item_info.quality, item_info.level)
+                local disenchant_value = item_info and disenchant.value(auction_record.item_id, item_info.slot, item_info.quality, item_info.level)
                 return auction_record.buyout_price > 0 and disenchant_value and disenchant_value - auction_record.buyout_price >= amount
             end
         end
@@ -165,7 +165,7 @@ M.filters = {
         validator = function(amount)
             return function(auction_record)
                 local vendor_price = info.item(auction_record.item_id).sell_price
-                return vendor_price and vendor_price * auction_record.aux_quantity - auction_record.bid_price >= amount
+                return vendor_price and vendor_price * auction_record.count - auction_record.bid_price >= amount
             end
         end
     },
@@ -175,7 +175,7 @@ M.filters = {
         validator = function(amount)
             return function(auction_record)
                 local vendor_price = info.item(auction_record.item_id).sell_price
-                return auction_record.buyout_price > 0 and vendor_price and vendor_price * auction_record.aux_quantity - auction_record.buyout_price >= amount
+                return auction_record.buyout_price > 0 and vendor_price and vendor_price * auction_record.count - auction_record.buyout_price >= amount
             end
         end
     },
@@ -185,6 +185,26 @@ M.filters = {
         validator = function(name)
             return function(auction_record)
                 return auction_record.owner and strupper(name) == strupper(auction_record.owner)
+            end
+        end
+    },
+
+    ['min-item-level'] = {
+        input_type = 'number',
+        validator = function(ilevel)
+            return function(auction_record)
+                local item_level = info.item(auction_record.item_id).level
+                return item_level and item_level >= ilevel
+            end
+        end
+    },
+
+    ['max-item-level'] = {
+        input_type = 'number',
+        validator = function(ilevel)
+            return function(auction_record)
+                local item_level = info.item(auction_record.item_id).level
+                return item_level and item_level <= ilevel
             end
         end
     },
@@ -212,7 +232,7 @@ do
 			if self.exact then return end
 			local number = tonumber(select(3, strfind(str, '^(%d+)$')) or nil)
 			if number then
-				if number >= 1 and number <= 60 then
+				if number >= 1 and number <= 70 then
 					for _, key in ipairs{'min_level', 'max_level'} do
 						if not self[key] then
 							self[key] = {str, number}

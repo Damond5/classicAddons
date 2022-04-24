@@ -4,7 +4,7 @@ local aux = require 'aux'
 local persistence = require 'aux.util.persistence'
 
 local MIN_ITEM_ID = 1
-local MAX_ITEM_ID = 30000
+local MAX_ITEM_ID = 40000
 
 local items_schema = {'tuple', '#', {name='string'}, {link='string'}, {quality='number'}, {level='number'}, {requirement='number'}, {class='string'}, {subclass='string'}, {slot='string'}, {max_stack='number'}, {texture='string'}, {sell_price='number'}}
 local merchant_buy_schema = {'tuple', '#', {unit_price='number'}, {limited='boolean'} }
@@ -145,7 +145,7 @@ function process_item(item_id)
             slot = slot,
             max_stack = max_stack,
             texture = texture,
-            sell_price = sell_price / (max_item_charges(item_id) or 1),
+            sell_price = sell_price,
         })
         local tooltip = tooltip('link', itemstring)
         if auctionable(tooltip, quality) then
@@ -169,7 +169,11 @@ end
 
 function on_get_item_info_received(item_id, success)
     if success then
-        aux.coro_thread(function() process_item(item_id) end)
+        aux.coro_thread(function()
+            if not aux.account_data.items[item_id] and not aux.account_data.unused_item_ids[item_id] then
+                process_item(item_id)
+            end
+        end)
     else -- TODO if success == nil then
         aux.account_data.unused_item_ids[item_id] = true
     end

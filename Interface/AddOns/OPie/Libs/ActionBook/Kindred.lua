@@ -1,4 +1,4 @@
-local KR, MAJ, REV, execQueue, _, T = {}, 1, 14, {}, ...
+local KR, MAJ, REV, execQueue, _, T = {}, 1, 16, {}, ...
 if T.ActionBook then return end
 
 local function assert(condition, err, ...)
@@ -24,7 +24,7 @@ end
 core:Execute([==[-- Kindred.Init
 	pcache, nextDriverKey, sandbox, modStateMap = newtable(), 4200, self:GetFrameRef("sandbox"), newtable()
 	cndType, cndState, cndDrivers, cndAlias, unitAlias, stateDrivers = newtable(), newtable(), newtable(), newtable(), newtable(), newtable()
-	modStateMap.A, modStateMap.a, modStateMap.S, modStateMap.s, modStateMap.C, modStateMap.c = true, false, true, false, true, false
+	modStateMap.A, modStateMap.a, modStateMap.S, modStateMap.s, modStateMap.C, modStateMap.c, modStateMap.M, modStateMap.m = true, false, true, false, true, false, true, false
 	btnState, isInLockdown, cndInsecure = newtable(), false, newtable()
 	bindingDrivers, bindingKeys, nextBindingKey, bindProxy, bindEscapeMap = newtable(), newtable(), 42000, self:GetFrameRef("bindProxy"), newtable()
 	bindEscapeMap.SEMICOLON, bindEscapeMap.OPEN, bindEscapeMap.CLOSE = ";", "[", "]"
@@ -47,10 +47,20 @@ core:Execute([==[-- Kindred.Init
 						else
 							local cvalparsed, mark, wname, inv, name, col, cval = nil, m:match("^([+]?)((n?o?)([^:=]*))([:=]?)(.-)%s*$")
 							if inv ~= "no" then inv, name = "", wname end
-							cval, name = col == ":" and cval and ("/" .. cval .. "/"):gsub("%s*/%s*", "/"):match("/(.+)/") or nil, col == ":" and name or (name .. col .. cval)
+							cval, name = col == ":" and cval and ("/" .. cval .. "/"):gsub("%s*/%s*", "/"):sub(2,-2) or nil, col == ":" and name or (name .. col .. cval)
 							if cval and cval ~= "" then
 								cvalparsed = newtable()
-								for s in cval:gmatch("[^/]+") do cvalparsed[#cvalparsed+1] = s end
+								for s in cval:gmatch("[^/]+") do
+									local int = (name == "form" or name == "stance") and s:match("^%-?%s*%d+")
+									if int then
+										if int+0 < 1 then
+											cvalparsed[0], s = true, nil
+										else
+											s = int
+										end
+									end
+									cvalparsed[#cvalparsed+1] = s
+								end
 							end
 							cct = newtable(name, cvalparsed, inv ~= "no", mark, cval)
 							ct[#ct+1], cct[0] = cct, m
@@ -68,7 +78,7 @@ core:Execute([==[-- Kindred.Init
 	]=]
 	OptionConstruct = [=[-- Kindred_OptionConstruct
 		local cond, modState, skipChunks = ...
-		local cond, out, msI, msA, msS, msC = pcache[cond] or owner:Run(OptionParse, cond) or pcache[cond]
+		local cond, out, msI, msA, msS, msC, msM = pcache[cond] or owner:Run(OptionParse, cond) or pcache[cond]
 		local getNextSkip = type(skipChunks) == "string" and skipChunks:gmatch("()s")
 		local skipNext = getNextSkip and getNextSkip()
 		for i=1,#cond do
@@ -85,12 +95,12 @@ core:Execute([==[-- Kindred.Init
 					if cndAlias[name] then name = cndAlias[name] end
 					if name == "mod" and modState then
 						if not msI then
-							local a,s,c = modState:match("(.)(.)(.)")
-							msI, msA, msS, msC = 1, modStateMap[a], modStateMap[s], modStateMap[c]
+							local a,s,c,m = modState:match("(.)(.)(.)(.?)")
+							msI, msA, msS, msC, msM = 1, modStateMap[a], modStateMap[s], modStateMap[c], modStateMap[m]
 						end
 						local argu, all = c[5], argp == nil
-						local wA, wS, wC = all or argu:match("alt"), all or argu:match("shift"), all or argu:match("ctrl")
-						if (wA and msA) or (wS and msS) or (wC and msC) then
+						local wA, wS, wC, wM = all or argu:match("alt"), all or argu:match("shift"), all or argu:match("ctrl"), all or argu:match("meta")
+						if (wA and msA) or (wS and msS) or (wC and msC) or (wM and msM) then
 							if not goal then
 								conditional = nil
 								break
@@ -100,6 +110,7 @@ core:Execute([==[-- Kindred.Init
 							if wA and msA ~= false then par, pn = par .. pn .. "alt", "/" end
 							if wS and msS ~= false then par, pn = par .. pn .. "shift", "/" end
 							if wC and msC ~= false then par, pn = par .. pn .. "ctrl", "/" end
+							if wM and msM ~= false then par, pn = par .. pn .. "meta", "/" end
 							if pn == "" and goal then
 								conditional = nil
 								break
@@ -115,13 +126,14 @@ core:Execute([==[-- Kindred.Init
 							local cs, cval = cndState[name]
 							if argp == nil then
 								cval = cs and cs["*"] or false
-							elseif cs then
-								for k=1,#argp do
+							else
+								for k=1,cs and #argp or 0 do
 									if cs[argp[k]] then
 										cval = true
 										break
 									end
 								end
+								cval = cval or (argp[0] and not (cs and cs["*"]))
 							end
 							cres = (not not cval) == goal
 						elseif ctype == "gt" then

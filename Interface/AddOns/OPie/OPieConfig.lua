@@ -1,7 +1,8 @@
-local L, config, _, T, KR = OneRingLib.lang, {}, ...
-local MODERN = select(4,GetBuildInfo()) >= 8e4
+local config, _, T, KR, PC = {}, ...
+local L, MODERN = T.L, select(4,GetBuildInfo()) >= 8e4
+OneRingLib.ext.config, KR, PC = config, T.ActionBook:compatible("Kindred",1,0), T.OPieCore
+local CreateEdge = T.ActionBook._CreateEdge
 
-OneRingLib.ext.config, KR = config, T.ActionBook:compatible("Kindred",1,0)
 function config.createPanel(name, parent)
 	local frame = CreateFrame("Frame", nil, UIParent)
 		frame.name, frame.parent = name, parent
@@ -263,6 +264,7 @@ do -- ext.config.ui
 				end)
 			end
 			local function bindToCounter(frame)
+				if MODERN then return end
 				if frame ~= scrollingDropdown then
 					frame.parent = scrollingDropdown
 				end
@@ -331,6 +333,10 @@ do -- ext.config.ui
 					end
 					return
 				end
+				local baseName = "DropDownList" .. level
+				local host = _G[baseName]
+				local n1 = (host.numButtons+1)
+				local nX = MAX_VISIBLE_ENTRIES+n1-1
 				local minWidth = math.max(120, level == 1 and UIDROPDOWNMENU_OPEN_MENU:GetWidth()-40 or 0)
 				for i=skipFirst+1,#dataList do
 					local text = entryFormatter(dataList[i], dataList)
@@ -338,11 +344,10 @@ do -- ext.config.ui
 					minWidth = math.max(minWidth, 60 + buttons[1]:GetFontString():GetStringWidth())
 				end
 				local info = {notClickable=true, notCheckable=true, minWidth=minWidth}
-				for i=1,MAX_VISIBLE_ENTRIES do
+				for i=n1,nX do
 					UIDropDownMenu_AddButton(info, level)
 				end
-				local baseName = "DropDownList" .. level
-				local host, b1, bX = _G[baseName], _G[baseName .. "Button1"], _G[baseName .. "Button" .. MAX_VISIBLE_ENTRIES]
+				local b1, bX = _G[baseName .. "Button" .. n1], _G[baseName .. "Button" .. nX]
 				scrollingDropdown.parent = host
 				scrollingDropdown:SetParent(host)
 				scrollingDropdown:SetPoint("TOPLEFT", b1)
@@ -359,9 +364,8 @@ end
 do -- ext.config.bind
 	local unbindMap, activeCaptureButton = {}
 	local alternateFrame = CreateFrame("Frame", nil, UIParent) do
-		alternateFrame:SetBackdrop({ bgFile="Interface/ChatFrame/ChatFrameBackground", edgeFile="Interface/DialogFrame/UI-DialogBox-Border", tile=true, tileSize=32, edgeSize=32, insets={left=11, right=11, top=12, bottom=10}})
+		CreateEdge(alternateFrame, { bgFile="Interface/ChatFrame/ChatFrameBackground", edgeFile="Interface/DialogFrame/UI-DialogBox-Border", tile=true, tileSize=32, edgeSize=32, insets={left=11, right=11, top=12, bottom=10}}, 0xd8000000)
 		alternateFrame:SetSize(380, 115)
-		alternateFrame:SetBackdropColor(0,0,0, 0.85)
 		alternateFrame:EnableMouse(1)
 		alternateFrame:SetScript("OnHide", alternateFrame.Hide)
 		local extReminder = CreateFrame("Button", nil, alternateFrame)
@@ -379,7 +383,7 @@ do -- ext.config.bind
 			GameTooltip:SetPoint("TOP", self, "BOTTOM")
 			GameTooltip:AddLine(L"Conditional Bindings", NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
 			GameTooltip:AddLine(L"The binding will update to reflect the value of this macro conditional.", HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b, 1)
-			GameTooltip:AddLine((L"You may use extended macro conditionals; see |cff33DDFF%s|r for details."):format("https://townlong-yak.com/opie/extended-conditionals"), HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b, 1)
+			GameTooltip:AddLine((L"You may use extended macro conditionals; see %s for details."):format("|cff33DDFFhttps://townlong-yak.com/addons/opie/extended-conditionals|r"), HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b, 1)
 			GameTooltip:AddLine((L"Example: %s."):format(GREEN_FONT_COLOR_CODE .. "[combat] ALT-C; [nomounted] CTRL-F|r"), NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
 			GameTooltip:Show()
 		end)
@@ -420,6 +424,9 @@ do -- ext.config.bind
 		self:UnlockHighlight()
 		self:EnableKeyboard(false)
 		self:SetScript("OnKeyDown", nil)
+		if MODERN then
+			self:SetScript("OnGamePadButtonDown", nil)
+		end
 		self:SetScript("OnHide", nil)
 		captureFrame:Hide()
 		activeCaptureButton = activeCaptureButton ~= self and activeCaptureButton or nil
@@ -428,14 +435,23 @@ do -- ext.config.bind
 		end
 		return self
 	end
+	local unbindableKeys = {
+		UNKNOWN=1, ESCAPE=1, ALT=1, SHIFT=1, META=1,
+		LALT=1, LCTRL=1, LSHIFT=1, LMETA=1,
+		RALT=1, RCTRL=1, RSHIFT=1, RMETA=1,
+		PADRSTICKUP=1, PADRSTICKDOWN=1, PADRSTICKLEFT=1, PADRSTICKRIGHT=1,
+		PADLSTICKUP=1, PADLSTICKDOWN=1, PADLSTICKLEFT=1, PADLSTICKRIGHT=1,
+	}
 	local function SetBind(self, bind)
-		if not (bind and (bind:match("^[LR]?ALT$") or bind:match("^[LR]?CTRL$") or bind:match("^[LR]?SHIFT$") or bind == "UNKNOWN")) then
-			Deactivate(self)
-			if bind == "ESCAPE" then return end
-			local bind, p = bind and ((IsAltKeyDown() and "ALT-" or "") ..  (IsControlKeyDown() and "CTRL-" or "") .. (IsShiftKeyDown() and "SHIFT-" or "") .. bind), self:GetParent()
-			if p and type(p.SetBinding) == "function" then
-				p.SetBinding(self, bind)
-			end
+		if bind == "ESCAPE" then
+			return Deactivate(self)
+		elseif unbindableKeys[bind] then
+			return
+		end
+		Deactivate(self)
+		local bind, p = bind and ((IsAltKeyDown() and "ALT-" or "") ..  (IsControlKeyDown() and "CTRL-" or "") .. (IsShiftKeyDown() and "SHIFT-" or "") .. (MODERN and IsMetaKeyDown() and "META-" or "") .. bind), self:GetParent()
+		if p and type(p.SetBinding) == "function" then
+			p.SetBinding(self, bind)
 		end
 	end
 	local function OnClick(self, button)
@@ -455,6 +471,9 @@ do -- ext.config.bind
 		self:LockHighlight()
 		self:EnableKeyboard(true)
 		self:SetScript("OnKeyDown", SetBind)
+		if MODERN then
+			self:SetScript("OnGamePadButtonDown", SetBind)
+		end
 		self:SetScript("OnHide", Deactivate)
 		if parent then
 			captureFrame:SetParent(parent.bindingContainerFrame or parent)
@@ -486,8 +505,8 @@ do -- ext.config.bind
 		return activeCaptureButton == self
 	end
 	local specialSymbolMap = {OPEN="[", CLOSE="]", SEMICOLON=";"}
-	local function bindNameLookup(capture)
-		return specialSymbolMap[capture] or _G["KEY_" .. capture]
+	local function bindNameLookup(key)
+		return GetBindingText(specialSymbolMap[key] or key)
 	end
 	local function bindFormat(bind)
 		return bind and bind ~= "" and bind:gsub("[^%-]+$", bindNameLookup) or L"Not bound"
@@ -582,8 +601,7 @@ do -- ext.config.overlay
 		local close = CreateFrame("Button", nil, container, "UIPanelCloseButton")
 		close:SetPoint("TOPRIGHT", 0, -1)
 		close:SetScript("OnClick", function() container:Hide() end)
-		container:SetBackdrop({edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", edgeSize=32, bgFile="Interface\\FrameGeneral\\UI-Background-Rock", tile=true, tileSize=256, insets={left=10,right=10,top=10,bottom=10}})
-		container:SetBackdropColor(0.3, 0.4, 0.5)
+		CreateEdge(container, {edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", edgeSize=32, bgFile="Interface\\FrameGeneral\\UI-Background-Rock", tile=true, tileSize=256, insets={left=10,right=10,top=10,bottom=10}}, 0x4c667f)
 		watcher:SetScript("OnHide", function()
 			if occupant then
 				container:Hide()
@@ -627,7 +645,7 @@ do -- ext.config.overlay
 		promptFrame.accept = CreateFrame("Button", nil, promptFrame, "UIPanelButtonTemplate")
 		promptFrame.cancel = CreateFrame("Button", nil, promptFrame, "UIPanelButtonTemplate")
 		promptFrame.detail = promptFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-		promptFrame.title:SetPoint("TOP")
+		promptFrame.title:SetPoint("TOP", 0, -3)
 		promptFrame.prompt:SetPoint("TOP", promptFrame.title, "BOTTOM", 0, -8)
 		promptFrame.editBox:SetPoint("TOP", promptFrame.prompt, "BOTTOM", 0, -7)
 		promptFrame.detail:SetPoint("TOP", promptFrame.editBox, "BOTTOM", 0, -8)
@@ -683,6 +701,45 @@ do -- ext.config.overlay
 		config.prompt(frame, title, message, nil, false, nil, false, dissmissText)
 	end
 end
+do -- ext.config.pulseDropdown
+	local function cloneTex(tex)
+		local l, sl = tex:GetDrawLayer()
+		local r = tex:GetParent():CreateTexture(nil, l, nil, sl+1)
+		r:SetAllPoints(tex)
+		r:SetTexture(tex:GetTexture())
+		r:SetTexCoord(tex:GetTexCoord())
+		r:SetVertexColor(0, 0.5, 0.75)
+		r:SetBlendMode("ADD")
+		return r
+	end
+	function config.pulseDropdown(drop)
+		if not drop.LeftA then
+			drop.LeftA, drop.MiddleA, drop.RightA = cloneTex(drop.Left), cloneTex(drop.Middle), cloneTex(drop.Right)
+		end
+		local endTime = GetTime()+2
+		local function pulse()
+			if drop.pulseFunc ~= pulse then
+				return
+			end
+			local t = GetTime()
+			if t >= endTime or not drop:IsVisible() then
+				drop.MiddleA:SetAlpha(0)
+				drop.LeftA:SetAlpha(0)
+				drop.RightA:SetAlpha(0)
+				drop.pulseFunc = nil
+				return
+			end
+			local p = 1-(endTime-t)/2
+			local s = 0.5+sin(p*360*3-90)/2
+			drop.LeftA:SetAlpha(s)
+			drop.MiddleA:SetAlpha(s)
+			drop.RightA:SetAlpha(s)
+			C_Timer.After(0, pulse)
+		end
+		drop.pulseFunc = pulse
+		pulse()
+	end
+end
 
 function config.undo.saveProfile(noData)
 	local undo, name = config.undo, OneRingLib:GetCurrentProfile()
@@ -694,7 +751,7 @@ function config.undo.saveProfile(noData)
 end
 
 function config.checkSVState(frame)
-	if not OneRingLib:GetSVState() then
+	if not PC:GetSVState() then
 		config.alert(frame, L"Changes will not be saved", L"World of Warcraft could not load OPie's saved variables due to a lack of memory. Try disabling other addons.\n\nAny changes you make now will not be saved.", L"Understood; edit anyway")
 	end
 end
@@ -715,17 +772,15 @@ local OPC_OptionSets = {
 	}, { L"Appearance",
 		{"bool", "GhostMIRings", caption=L"Nested rings"},
 		{"bool", "ShowKeys", caption=L"Per-slice bindings", depOn="SliceBinding", depValue=true, otherwise=false},
-		{"bool", "ShowCooldowns", caption=L"Show cooldown numbers"},
-		{"bool", "ShowRecharge", caption=L"Show recharge numbers"},
+		{"bool", "ShowCooldowns", caption=L"Show cooldown numbers", depIndicatorFeature="CooldownNumbers"},
+		{"bool", "ShowRecharge", caption=L"Show recharge numbers", depIndicatorFeature="CooldownNumbers"},
+		{"bool", "ShowShortLabels", caption=L"Show slice labels"},
 		{"bool", "UseGameTooltip", caption=L"Show tooltips"},
 		{"bool", "HideStanceBar", caption=L"Hide stance bar", global=true},
 	}, { L"Animation",
 		{"bool", "MIScale", caption=L"Enlarge selected slice"},
 		{"bool", "MISpinOnHide", caption=L"Outward spiral on hide"},
-		{"range", "XTScaleSpeed", -4, 4, 0.2, caption=L"Scale animation speed"},
-		{"range", "XTPointerSpeed", -4, 4, 0.2, caption=L"Pointer rotation speed"},
 		{"range", "XTZoomTime", 0, 1, 0.1, caption=L"Zoom-in/out time", suffix=L"(%.1f sec)"},
-		{"range", "XTRotationPeriod", 1, 10, 0.2, caption=L"Rotation period", suffix=L"(%.1f sec)"}
 	}
 }
 
@@ -759,6 +814,7 @@ do -- Widget construction
 	function build.bool(v, ofsY, halfpoint, rowHeight)
 		local b = CreateFrame("CheckButton", nil, frame, "InterfaceOptionsCheckButtonTemplate")
 		b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+		b:SetMotionScriptsWhileDisabled(true)
 		b.id, b.text, b.desc = v[2], b.Text, v
 		b:SetPoint("TOPLEFT", frame, "TOPLEFT", halfpoint and 315 or 15, ofsY)
 		b:SetScript("OnClick", notifyChange)
@@ -791,13 +847,13 @@ do -- Widget construction
 		return b, ofsY - 20, false, 0
 	end
 
-	local cY, halfpoint, rowHeight = MODERN and -115 or -95, false
+	local cY, halfpoint, rowHeight = MODERN and -110 or -90, false
 	for _, v in ipairs(OPC_OptionSets) do
 		v.label = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-		v.label:SetPoint("TOP", frame, "TOP", -50, cY-10)
+		v.label:SetPoint("TOP", frame, "TOP", -50, cY-15)
 		v.label:SetJustifyH("LEFT")
 		v.label:SetPoint("LEFT", frame, "LEFT", 16, 0)
-		cY, halfpoint, rowHeight = cY - 30, false, 0
+		cY, halfpoint, rowHeight = cY - 36, false, 0
 		for j=2,#v do
 			v[j].widget, cY, halfpoint, rowHeight = build[v[j][1]](v[j], cY, halfpoint, rowHeight)
 			OPC_Widgets[v[j][2]], v[j].widget.control = v[j].widget, v[j]
@@ -807,6 +863,10 @@ do -- Widget construction
 		end
 	end
 end
+local OPC_AppearanceFactory = CreateFrame("Frame", "OPC_AppearanceDropdown", frame, "UIDropDownMenuTemplate")
+OPC_AppearanceFactory:SetPoint("LEFT", OPC_OptionSets[2].label, "LEFT", 280, -2)
+UIDropDownMenu_SetWidth(OPC_AppearanceFactory, 200)
+
 T.OPC_RingScopePrefixes = {
 	[30] = "|cff25bdff",
 	[20] = "|c" .. RAID_CLASS_COLORS[select(2,UnitClass("player"))].colorStr,
@@ -815,6 +875,24 @@ T.OPC_RingScopePrefixes = {
 
 local OR_CurrentOptionsDomain
 
+local function OPC_UpdateControlReqs(v)
+	local enabled, disabledHint = true, nil
+	if v.depOn then
+		enabled = OneRingLib:GetOption(v.depOn, OR_CurrentOptionsDomain) == v.depValue
+	elseif v.depIndicatorFeature then
+		enabled = T.OPieUI:DoesIndicatorConstructorSupport(OneRingLib:GetOption("IndicatorFactory", OR_CurrentOptionsDomain), v.depIndicatorFeature)
+		disabledHint = L"Not supported by selected appearance."
+	end
+	v.widget:SetEnabled(enabled)
+	-- It just so happens they're all checkboxes. This will explode when they are not.
+	if enabled then
+		v.widget:SetChecked(OneRingLib:GetOption(v[2], OR_CurrentOptionsDomain) or nil)
+		v.widget.tooltipText = nil
+	else
+		v.widget:SetChecked(v.otherwise or nil)
+		v.widget.tooltipText = disabledHint
+	end
+end
 function OPC_AlterOption(widget, option, newval, ...)
 	if (...) == "RightButton" then
 		newval = nil
@@ -839,18 +917,13 @@ function OPC_AlterOption(widget, option, newval, ...)
 	end
 	for _,set in ipairs(OPC_OptionSets) do for j=2,#set do local v = set[j]
 		if v.depOn == option then
-			local match = OneRingLib:GetOption(v.depOn, OR_CurrentOptionsDomain) == v.depValue
-			v.widget:SetEnabled(match)
-			if match then
-				v.widget:SetChecked(OneRingLib:GetOption(v[2], OR_CurrentOptionsDomain) or nil)
-			else
-				v.widget:SetChecked(v.otherwise or nil)
-			end
+			OPC_UpdateControlReqs(v)
 		end
 	end end
 end
 function OPC_OptionDomain:click(ringName)
 	OR_CurrentOptionsDomain = ringName or nil
+	frame.resetOnHide = nil
 	frame.refresh()
 end
 local function OPC_OptionDomain_Format(key, list)
@@ -909,6 +982,56 @@ function OPC_Profile:initialize()
 	info.text, info.func = OneRingLib:GetCurrentProfile() ~= "default" and L"Delete current profile" or L"Restore default settings", OPC_Profile.delete
 	UIDropDownMenu_AddButton(info)
 end
+function OPC_AppearanceFactory:formatText(key, outOfDate, name)
+	name = name or T.OPieUI:GetIndicatorConstructorName(key)
+	if not name then
+		name = "|cffa0a0a0*[" .. T.OPieUI:GetIndicatorConstructorName() .. "]|r"
+	end
+	if outOfDate then
+		name = "|cffff6060" .. name .. "|r"
+	end
+	if key == "mirage" then
+		name = "|cff00e800" .. name .. "|r"
+	elseif key == "_" then
+		name = L"Not customized" .. " (|cffb0b0b0" .. name .. "|r)"
+	end
+	return name
+end
+function OPC_AppearanceFactory:text()
+	local key, own = OneRingLib:GetOption("IndicatorFactory", OR_CurrentOptionsDomain)
+	UIDropDownMenu_SetText(self, OR_CurrentOptionsDomain and own == nil and L"Use global setting" or self:formatText(key, false))
+end
+function OPC_AppearanceFactory:initialize()
+	local info = {func=self.set, minWidth=UIDROPDOWNMENU_OPEN_MENU:GetWidth()-40, tooltipOnButton=true}
+	local current, own = OneRingLib:GetOption("IndicatorFactory", OR_CurrentOptionsDomain)
+	for k, name, outOfDate in T.OPieUI:EnumerateRegisteredIndicatorConstructors() do
+		name = self:formatText(k, outOfDate, name)
+		if k == "_" then
+			UIDropDownMenu_AddSeparator()
+		end
+		if outOfDate then
+			info.tooltipTitle, info.tooltipText = "|cffff2020" .. L"Update required", L"This appearance may not support all OPie features."
+		else
+			info.tooltipTitle, info.tooltipText = nil
+		end
+		info.arg1, info.text, info.checked = k, name, k == own or (own == nil and not OR_CurrentOptionsDomain and current == k)
+		UIDropDownMenu_AddButton(info)
+	end
+	if OR_CurrentOptionsDomain then
+		info.text, info.arg1, info.checked = L"Use global setting", nil, own == nil
+		info.tooltipTitle, info.tooltipText = nil
+		UIDropDownMenu_AddButton(info)
+	end
+end
+function OPC_AppearanceFactory:set(key)
+	OneRingLib:SetOption("IndicatorFactory", key, OR_CurrentOptionsDomain)
+	OPC_AppearanceFactory:text()
+	for _,set in ipairs(OPC_OptionSets) do for j=2,#set do local v = set[j]
+		if v.depIndicatorFeature then
+			OPC_UpdateControlReqs(v)
+		end
+	end end
+end
 function frame.refresh()
 	OPC_BlockInput = true
 	frame.desc:SetText(L"Customize OPie's appearance and behavior. Right clicking a checkbox restores it to its default state."
@@ -926,6 +1049,8 @@ function frame.refresh()
 	end
 	UIDropDownMenu_SetText(OPC_OptionDomain, label)
 	UIDropDownMenu_SetText(OPC_Profile, L"Profile" .. ": " .. OPC_Profile_FormatName(OneRingLib:GetCurrentProfile()))
+	OPC_AppearanceFactory:text()
+	OPC_AppearanceFactory:SetShown(T.OPieUI:HasMultipleIndicatorConstructors())
 	for _, set in pairs(OPC_OptionSets) do for j=2,#set do
 		local v, opttype, option = set[j], set[j][1], set[j][2]
 		if opttype == "range" then
@@ -939,12 +1064,8 @@ function frame.refresh()
 			v.widget:SetChecked(OneRingLib:GetOption(option, OR_CurrentOptionsDomain) or nil)
 			v.widget.text:SetText(v.caption)
 		end
-		if v.depOn then
-			local match = OneRingLib:GetOption(v.depOn, OR_CurrentOptionsDomain) == v.depValue
-			v.widget:SetEnabled(match)
-			if not match then
-				v.widget:SetChecked(v.otherwise or nil)
-			end
+		if v.depOn or v.depIndicatorFeature then
+			OPC_UpdateControlReqs(v)
 		end
 		v.widget:SetShown(not v.global or OR_CurrentOptionsDomain == nil)
 	end end
@@ -965,6 +1086,11 @@ function frame.okay()
 	OR_CurrentOptionsDomain = nil
 end
 frame:SetScript("OnShow", frame.refresh)
+frame:SetScript("OnHide", function()
+	if frame.resetOnHide then
+		OR_CurrentOptionsDomain, frame.resetOnHide = nil
+	end
+end)
 
 local slashExtensions = {}
 local function addSuffix(func, word, ...)
@@ -973,7 +1099,7 @@ local function addSuffix(func, word, ...)
 		addSuffix(func, ...)
 	end
 end
-config.AddSlashSuffix = addSuffix
+T.AddSlashSuffix = addSuffix
 
 SLASH_OPIE1, SLASH_OPIE2 = "/opie", "/op"
 SlashCmdList["OPIE"] = function(args, ...)
@@ -983,4 +1109,10 @@ SlashCmdList["OPIE"] = function(args, ...)
 	else
 		config.open(frame)
 	end
+end
+function T.ShowOPieOptionsPanel(ringKey)
+	config.open(frame)
+	OPC_OptionDomain:click(ringKey)
+	frame.resetOnHide = true
+	config.pulseDropdown(OPC_OptionDomain)
 end

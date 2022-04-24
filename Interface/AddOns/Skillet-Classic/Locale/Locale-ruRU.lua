@@ -90,12 +90,10 @@ L["FEATURESDESC"] = "Необязательные свойства которы�
 L["Filter"] = "Фильтр"
 L["Flat"] = "Прямой"
 L["Flush All Data"] = "Сбросить все данные"
---[[Translation missing --]]
-L["Flush Player Data"] = "Flush Player Data"
+L["Flush Player Data"] = "Очистить данные игрока"
 L["Flush Recipe Data"] = "Сбросить данные рецептов"
 L["FLUSHALLDATADESC"] = "Сбросить все данные Skillet"
---[[Translation missing --]]
-L["FLUSHPLAYERDATADESC"] = "Flush this character's data"
+L["FLUSHPLAYERDATADESC"] = "Очистить данные этого персонажа"
 L["FLUSHRECIPEDATADESC"] = "Сбросить данные рецептов Skillet"
 L["From Selection"] = "Из выбранного"
 L["Glyph "] = "Символ "
@@ -114,6 +112,7 @@ L["Ignored Materials Clear"] = "Очистить список игнорируе
 L["Ignored Materials List"] = "Список игнорируемых материалов"
 L["IGNORELISTDESC"] = "Открыть список игнорируемых материалов."
 L["Illusions"] = "Иллюзии"
+L["in your bank"] = "в вашем банке"
 L["in your inventory"] = "в вашем инвентаре"
 L["Include alts"] = "Включать альтов"
 L["Include bank"] = "Включая банк"
@@ -165,6 +164,10 @@ L["Queue is not empty. Overwrite?"] = "Очередь не пуста. Пере�
 L["Queue with this name already exsists. Overwrite?"] = "Очередь с таким именем уже сужествует. Переписать?"
 L["QUEUECRAFTABLEREAGENTSDESC"] = "Если вы можете создать реагент, необходимый для создания рецепта, то при его отсутствии, он будет добавлен в очередь"
 L["QUEUECRAFTABLEREAGENTSNAME"] = "Добавить реагенты в очередь"
+--[[Translation missing --]]
+L["QUEUECRAFTSDESC"] = "Allow enchants to be queued which adds needed reagents to the shopping list. Enchants cannot be processed from the queue and will be removed."
+--[[Translation missing --]]
+L["QUEUECRAFTSNAME"] = "Queue enchant reagents"
 L["QUEUEGLYPHREAGENTSDESC"] = "Если Вы можете создать реагент, необходимый для создания рецепта, то при его отсутствии, он будет добавлен в очередь (эта опция относится только к символам)."
 L["QUEUEGLYPHREAGENTSNAME"] = "В очередь реагенты для символов"
 L["QUEUEONLYVIEWDESC"] = "Показывать окно автономной очереди только в том случае, если оно установлено, показывать как окно автономной очереди, так и окно Skillet, если оно отключено."
@@ -246,6 +249,8 @@ L["Total Cost:"] = "Общая цена:"
 L["Total spent"] = "Всего затрат"
 L["TRADEBUTTONSDESC"] = "Включить кнопки TradeSkill в рамку"
 L["TRADEBUTTONSNAME"] = "Включить кнопки TradeSkill"
+--[[Translation missing --]]
+L["TradeSkillMaster must be in 'WOW UI' mode to use Skillet-Classic"] = ""
 L["Trained"] = "Изучено"
 L["TRANSPARAENCYDESC"] = "Прозрачность главного окна профессий"
 L["Transparency"] = "Прозрачность"

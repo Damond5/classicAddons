@@ -22,6 +22,7 @@ ItemRack.CheckButtonLabels = {
 	["ItemRackOptEventEditBuffAnyMountText"] = "Any mount",
 	["ItemRackOptEventEditBuffUnequipText"] = "Unequip when buff fades",
 	["ItemRackOptEventEditBuffNotInPVPText"] = "Except in PVP instances",
+	["ItemRackOptEventEditBuffNotInPVEText"] = "Except in PVE instances",
 	["ItemRackOptEventEditStanceUnequipText"] = "Unequip on leaving stance",
 	["ItemRackOptEventEditZoneUnequipText"] = "Unequip on leaving zone",
 	["ItemRackOptEventEditStanceNotInPVPText"] = "Except in PVP instances",
@@ -53,6 +54,15 @@ end
 
 function ItemRackOpt.OnLoad(self)
 	table.insert(UISpecialFrames,"ItemRackOptFrame")
+	Mixin(ItemRackOptFrame, BackdropTemplateMixin)
+	ItemRackOptFrame:SetBackdrop({
+		bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
+		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 16,
+		insets = {left = 4, right = 4, top = 4, bottom = 4},
+	})
 	ItemRackOptInv0:SetScale(.8)
 	for i=0,19 do
 		ItemRackOpt.Inv[i] = {}
@@ -113,7 +123,6 @@ function ItemRackOpt.OnLoad(self)
 		{type="check",optset=ItemRackSettings,variable="AllowHidden",label="Allow hidden items",tooltip="Enable Alt+clicking of menu items to hide/show them in the menu.  Hold Alt as you enter a menu to show all."},
 		{type="check",optset=ItemRackSettings,variable="HideTradables",label="Hide tradables",tooltip="Prevent tradable items from showing up in the menu."},
 		{type="check",optset=ItemRackSettings,variable="ShowMinimap",label="Show minimap button",tooltip="Show the minimap button to access options or change sets."},
-		{type="check",optset=ItemRackSettings,variable="SquareMinimap",depend="ShowMinimap",label="Square minimap",tooltip="If you use a square minimap, make the button drag along square edge."},
 		{type="check",optset=ItemRackSettings,variable="MinimapTooltip",depend="ShowMinimap",label="Show minimap tooltip",tooltip="If tooltips enabled, show what mouse clicks will do when clicking the minimap button."},
 		{type="check",optset=ItemRackSettings,variable="TrinketMenuMode",label="TrinketMenu mode",tooltip="When mouseover of either trinket slot, open anchored to the top trinket.  Left click of a menu item will equip to the top trinket.  Right click will equip to the bottom trinket."},
 		{type="check",optset=ItemRackSettings,variable="AnchorOther",depend="TrinketMenuMode",label="Anchor other trinket",tooltip="In TrinketMenu mode, trinket menus dock to the top trinket.  Check this to anchor them to the bottom trinket."},
@@ -823,8 +832,8 @@ function ItemRackOpt.OptListCheckButtonOnClick(self,override)
 		ItemRack.WriteMenuCooldowns()
 	elseif opt.variable=="LargeNumbers" then
 		ItemRack.ReflectCooldownFont()
-	elseif opt.variable=="ShowMinimap" or opt.variable=="SquareMinimap" then
-		ItemRack.MoveMinimap()
+	elseif opt.variable=="ShowMinimap" then
+		ItemRack.ShowMinimap()
 	elseif opt.variable=="EnableQueues" or opt.variable=="EnablePerSetQueues" then
 		ItemRack.UpdateCombatQueue()
 	elseif opt.variable=="ShowHotKeys" then
@@ -912,6 +921,7 @@ function ItemRackOpt.BindSet()
 	local setname = ItemRackOptSetsName:GetText()
 	ItemRackOpt.Binding = { type="Set", name="Set \""..setname.."\"", buttonName="ItemRack"..UnitName("player")..GetRealmName()..setname }
 	ItemRackOpt.Binding.button = _G[buttonName] or CreateFrame("Button",ItemRackOpt.Binding.buttonName,nil,"SecureActionButtonTemplate")
+	
 	ItemRackOptBindFrame:Show()	
 end
 
@@ -1641,6 +1651,7 @@ function ItemRackOpt.EventEditClearFrame()
 	ItemRackOptEventEditBuffAnyMount:SetChecked(false)
 	ItemRackOptEventEditBuffUnequip:SetChecked(false)
 	ItemRackOptEventEditBuffNotInPVP:SetChecked(false)
+	ItemRackOptEventEditBuffNotInPVE:SetChecked(false)
 	ItemRackOptEventEditStanceName:SetText("")
 	ItemRackOptEventEditStanceUnequip:SetChecked(false)
 	ItemRackOptEventEditStanceNotInPVP:SetChecked(false)
@@ -1667,6 +1678,7 @@ function ItemRackOpt.EventEditPopulateFrame()
 		end
 		ItemRackOptEventEditBuffUnequip:SetChecked(event.Unequip)
 		ItemRackOptEventEditBuffNotInPVP:SetChecked(event.NotInPVP)
+		ItemRackOptEventEditBuffNotInPVE:SetChecked(event.NotInPVE)
 		ItemRackOptEventEditStanceName:SetText(event.Stance or "")
 		ItemRackOptEventEditStanceUnequip:SetChecked(event.Unequip)
 		ItemRackOptEventEditStanceNotInPVP:SetChecked(event.NotInPVP)
@@ -1818,6 +1830,7 @@ function ItemRackOpt.EventEditSave(override)
 		event.Buff = ItemRackOptEventEditBuffName:GetText()
 		event.Unequip = ItemRackOptEventEditBuffUnequip:GetChecked()
 		event.NotInPVP = ItemRackOptEventEditBuffNotInPVP:GetChecked()
+		event.NotInPVE = ItemRackOptEventEditBuffNotInPVE:GetChecked()
 	elseif event.Type=="Stance" then
 		event.Stance = ItemRackOptEventEditStanceName:GetText()
 		if tonumber(event.Stance) then

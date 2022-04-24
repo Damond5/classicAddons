@@ -2,7 +2,18 @@ ItemRack = {}
 
 local _
 
-ItemRack.Version = "3.47"
+ItemRack.Version = "3.69"
+
+function ItemRack.IsClassic()
+	return WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
+  end
+
+function ItemRack.IsBCC()
+	return WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC
+end
+
+local LDB = LibStub("LibDataBroker-1.1")
+local LDBIcon = LibStub("LibDBIcon-1.0")
 
 ItemRackUser = {
 	Sets = {}, -- user's sets
@@ -38,8 +49,7 @@ ItemRackSettings = {
 	AllowEmpty = "ON", -- allow empty slot as a choice in menus
 	HideTradables = "OFF", -- allow non-soulbound gear to appear in menu
 	AllowHidden = "ON", -- allow the ability to hide items/sets in the menu with alt+click
-	ShowMinimap = "ON", -- whether to show the minimap button
-	SquareMinimap = "OFF", -- whether to position minimap button as if on a square minimap
+	ShowMinimap = true, -- whether to show the minimap button
 	TrinketMenuMode = "OFF", -- whether to merge top/bottom trinkets to one menu (leftclick=top,rightclick=bottom)
 	AnotherOther = "OFF", -- whether to dock the merged trinket menu to bottom trinket
 	EquipToggle = "OFF", -- whether to toggle equipping a set when choosing to equip it
@@ -65,7 +75,11 @@ ItemRackItems = {
 
 ItemRack.Menu = {}
 ItemRack.LockList = {} -- index -2 to 11, flag whether item is tagged already for swap
-ItemRack.BankSlots = { -1,5,6,7,8,9,10 }
+if ItemRack.IsClassic() then
+	ItemRack.BankSlots = { -1,5,6,7,8,9,10 }
+elseif ItemRack.IsBCC() then
+	ItemRack.BankSlots = { -1,5,6,7,8,9,10,11 }
+end
 ItemRack.KnownItems = {} -- cache of known item locations for fast lookup
 
 ItemRack.SlotInfo = {
@@ -141,43 +155,10 @@ ItemRack.TooltipInfo = {
 
 ItemRack.BankOpen = nil -- 1 if bank is open, nil if not
 
-ItemRack.LastCurrentSet = nil -- last known current set
-
-function ItemRack.OnLoad(self)
-	ItemRack.InitTimers()
-	ItemRack.CreateTimer("OnLogin",ItemRack.OnPlayerLogin,1)
-	ItemRack.StartTimer("OnLogin")
-	-- run ItemRack.OnPlayerLogin 1 second after player in world
-end
-
 ItemRack.EventHandlers = {}
 ItemRack.ExternalEventHandlers = {}
 
-function ItemRack.OnEvent(self,event,...)
-	ItemRack.EventHandlers[event](self,event,...)
-end
-
---- Allows third-party addons to listen to ItemRack events, like saving and deleting a set.
-function ItemRack.RegisterExternalEventListener(self,event,handler)
-	local handlers = ItemRack.ExternalEventHandlers[event]
-	if handlers == nil then
-		handlers = {}
-		ItemRack.ExternalEventHandlers[event] = handlers
-	end
-	
-	table.insert(handlers, handler)
-end
-
-function ItemRack.FireItemRackEvent(self,event,...)
-	local handlers = ItemRack.ExternalEventHandlers[event]
-	if handlers ~= nil then
-		for _, handler in pairs(handlers) do
-			handler(event,...)
-		end
-	end
-end
-
-function ItemRack.OnPlayerLogin()
+function ItemRack.InitEventHandlers()
 	local handler = ItemRack.EventHandlers
 	handler.ITEM_LOCK_CHANGED = ItemRack.OnItemLockChanged
 	handler.ACTIONBAR_UPDATE_COOLDOWN = ItemRack.UpdateButtonCooldowns
@@ -196,14 +177,66 @@ function ItemRack.OnPlayerLogin()
 	handler.UNIT_SPELLCAST_FAILED = ItemRack.OnCastingStop
 	handler.CHARACTER_POINTS_CHANGED = ItemRack.UpdateClassSpecificStuff
 	handler.PLAYER_TALENT_UPDATE = ItemRack.UpdateClassSpecificStuff
+	handler.PLAYER_ENTERING_WORLD = ItemRack.OnEnterWorld
 --	handler.ACTIVE_TALENT_GROUP_CHANGED = ItemRack.UpdateClassSpecificStuff
 --	handler.PET_BATTLE_OPENING_START = ItemRack.OnEnteringPetBattle
 --	handler.PET_BATTLE_CLOSE = ItemRack.OnLeavingPetBattle
+end
 
+do
+	local Masque = LibStub("Masque", true) or (LibMasque and LibMasque("Button"))
+	if Masque then
+		ItemRack.MasqueGroups = {}
+		ItemRack.MasqueGroups[1] = Masque:Group("ItemRack", "On screen panels")
+		ItemRack.MasqueGroups[2] = Masque:Group("ItemRack", "On screen menus")
+		ItemRack.MasqueGroups[3] = Masque:Group("ItemRack", "Character info menus")
+		ItemRack.MasqueGroups[4] = Masque:Group("ItemRack", "Map icon menu")
+	end
+end
+
+function ItemRack.OnEvent(self,event,...)
+	ItemRack.EventHandlers[event](self,event,...)
+end
+
+--- Allows third-party addons to listen to ItemRack events, like saving and deleting a set.
+function ItemRack.RegisterExternalEventListener(self,event,handler)
+	local handlers = ItemRack.ExternalEventHandlers[event]
+	if handlers == nil then
+		handlers = {}
+		ItemRack.ExternalEventHandlers[event] = handlers
+	end
+
+	table.insert(handlers, handler)
+end
+
+function ItemRack.FireItemRackEvent(self,event,...)
+	local handlers = ItemRack.ExternalEventHandlers[event]
+	if handlers ~= nil then
+		for _, handler in pairs(handlers) do
+			handler(event,...)
+		end
+	end
+end
+
+function ItemRack.OnPlayerLogin()
+	-- Normally some of these methods cannot be called in combat without causing errors, but since we run these IMMEDIATELY
+	-- on PLAYER_LOGIN event we get a grace period where it allows us to run secure code in combat.
+	ItemRack.InitBroker()
+	ItemRack.InitEventHandlers()
+	ItemRack.InitTimers()
 	ItemRack.InitCore()
 	ItemRack.InitButtons()
 	ItemRack.InitEvents()
 end
+
+function ItemRack.OnEnterWorld()
+	ItemRack.SetSetBindings()
+end
+
+local loader = CreateFrame("Frame",nil, self, BackdropTemplateMixin and "BackdropTemplate") -- need a new temp frame here, ItemRackFrame is not created yet
+
+loader:RegisterEvent("PLAYER_LOGIN")
+loader:SetScript("OnEvent", ItemRack.OnPlayerLogin)
 
 function ItemRack.OnCastingStart(self,event,unit)
 	if unit=="player" then
@@ -422,9 +455,7 @@ function ItemRack.InitCore()
 	ItemRack.CreateTimer("MenuMouseover",ItemRack.MenuMouseover,.25,1)
 	ItemRack.CreateTimer("TooltipUpdate",ItemRack.TooltipUpdate,1,1)
 	ItemRack.CreateTimer("CooldownUpdate",ItemRack.CooldownUpdate,1,1)
-	ItemRack.CreateTimer("MinimapDragging",ItemRack.MinimapDragging,0,1)
 	ItemRack.CreateTimer("LocksChanged",ItemRack.LocksChanged,.2)
-	ItemRack.CreateTimer("MinimapShine",ItemRack.MinimapShineUpdate,0,1)
 	ItemRack.CreateTimer("DelayedCombatQueue",ItemRack.DelayedCombatQueue,.1)
 
 	for i=-2,11 do
@@ -458,11 +489,10 @@ function ItemRack.InitCore()
 	ItemRackFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
 	ItemRackFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
 	ItemRackFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")
+	ItemRackFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 	--end
 	ItemRack.StartTimer("CooldownUpdate")
-	ItemRack.MoveMinimap()
 	ItemRack.ReflectAlpha()
-	ItemRack.SetSetBindings()
 
 	SlashCmdList["ItemRack"] = ItemRack.SlashHandler
 	SLASH_ItemRack1 = "/itemrack"
@@ -496,11 +526,8 @@ function ItemRack.UpdateCurrentSet()
 		ItemRackButton20Icon:SetTexture(texture)
 		ItemRackButton20Name:SetText(setname)
 	end
-	ItemRackMinimapIcon:SetTexture(texture)
-	if setname ~= ItemRack.LastCurrentSet then
-		ItemRack.MinimapShineFadeIn()
-		ItemRack.LastCurrentSet = setname
-	end
+	ItemRack.Broker.icon = texture
+	ItemRack.Broker.text = setname
 end
 
 --[[ Item info gathering ]]
@@ -741,7 +768,8 @@ function ItemRack.IsRed(which)
 end
 
 function ItemRack.PlayerCanWear(invslot,bag,slot)
-	local found,lines,txt = false
+	local found = false
+	local txt = false
 
 	local i=1
 	while _G["ItemRackTooltipTextLeft"..i] do
@@ -773,7 +801,7 @@ end
 function ItemRack.IsSoulbound(bag,slot)
 	ItemRackTooltip:SetBagItem(bag,slot)
 	for i=2,5 do
-		text = _G["ItemRackTooltipTextLeft"..i]:GetText()
+		local text = _G["ItemRackTooltipTextLeft"..i]:GetText()
 		if text==ITEM_SOULBOUND or text==ITEM_BIND_QUEST or text==ITEM_CONJURED then
 			return 1
 		end
@@ -831,7 +859,7 @@ end
 -- func = function to run when the delay finishes
 -- delay = time (in seconds) after the timer is started before func is run
 -- rep = nil or 1, whether to repeat the delay once it's reached
--- 
+--
 -- The standard use is to create a timer, and then ItemRack.StartTimer
 -- when you want to run the delayed function.
 --
@@ -862,7 +890,7 @@ function ItemRack.StopTimer(name)
 	local idx = ItemRack.IsTimerActive(name)
 	if idx then
 		table.remove(ItemRack.Timers,idx)
-		if table.getn(ItemRack.Timers)<1 then
+		if #(ItemRack.Timers)<1 then
 			ItemRackFrame:Hide()
 		end
 	end
@@ -929,7 +957,7 @@ end
 -- id = 0-19 for inventory slots, or 20 for set, or nil for last defined slot/set menu (ItemRack.menuOpen)
 -- before calling ItemRack.BuildMenu, you should call ItemRack.DockWindows
 -- if menuInclude, then also include the worn item(s) in the menu
-function ItemRack.BuildMenu(id,menuInclude)
+function ItemRack.BuildMenu(id,menuInclude,masqueGroup)
 	if id then
 		ItemRack.menuOpen = id
 		ItemRack.menuInclude = menuInclude
@@ -1003,7 +1031,7 @@ function ItemRack.BuildMenu(id,menuInclude)
 		-- display outward from docking point
 		local col,row,xpos,ypos = 0,0,ItemRack.DockInfo[ItemRack.currentDock].xstart,ItemRack.DockInfo[ItemRack.currentDock].ystart
 		local max_cols = 1
-		local button
+		local button, icon
 
 		if ItemRackUser.SetMenuWrap=="ON" then
 			max_cols = ItemRackUser.SetMenuWrapValue
@@ -1021,6 +1049,17 @@ function ItemRack.BuildMenu(id,menuInclude)
 			button = ItemRack.CreateMenuButton(i,ItemRack.Menu[i]) or ItemRackButtonMenu
 			button:SetPoint("TOPLEFT",ItemRackMenuFrame,ItemRack.menuDock,xpos,ypos)
 			button:SetFrameLevel(ItemRackMenuFrame:GetFrameLevel()+1)
+
+			if ItemRack.MasqueGroups then
+				for _, group in pairs(ItemRack.MasqueGroups) do
+					group:RemoveButton(button)
+				end
+
+				if ItemRack.MasqueGroups[masqueGroup] then
+					ItemRack.MasqueGroups[masqueGroup]:AddButton(button)
+				end
+			end
+
 			if ItemRack.menuOrient=="VERTICAL" then
 				xpos = xpos + ItemRack.DockInfo[ItemRack.currentDock].xdir*40
 				col = col + 1
@@ -1167,6 +1206,7 @@ function ItemRack.CreateMenuButton(idx,itemID)
 		button:SetScript("OnEnter",ItemRack.MenuTooltip)
 		button:SetScript("OnLeave",ItemRack.ClearTooltip)
 		CreateFrame("Frame",nil,button,"ItemRackTimeTemplate")
+
 		ItemRack.SetFont("ItemRackMenu"..idx)
 --		local font = button:CreateFontString("ItemRackMenu"..idx.."Time","OVERLAY","NumberFontNormal")
 --		font:SetJustifyH("CENTER")
@@ -1313,7 +1353,7 @@ function ItemRack.EquipItemByID(id,slot)
 			end
 		end
 	end
-end	
+end
 
 --[[ Hooks to capture item use outside the mod ]]
 
@@ -1671,6 +1711,7 @@ end
 
 function ItemRack.DockMenuToCharacterSheet(self)
 	local name = self:GetName()
+	local slot
 	for i=0,19 do
 		if name=="Character"..ItemRack.SlotInfo[i].name then
 			slot = i
@@ -1685,41 +1726,32 @@ function ItemRack.DockMenuToCharacterSheet(self)
 			end
 			ItemRack.DockWindows("TOPLEFT",self,"TOPRIGHT","HORIZONTAL")
 		end
-		ItemRack.BuildMenu(slot)
+		ItemRack.BuildMenu(slot, nil, 3)
 	end
 end
 
 --[[ Minimap button ]]
 
-function ItemRack.MinimapDragging()
-	local xpos,ypos = GetCursorPosition()
-	local xmin,ymin = Minimap:GetLeft(), Minimap:GetBottom()
-
-	xpos = xmin-xpos/Minimap:GetEffectiveScale()+70
-	ypos = ypos/Minimap:GetEffectiveScale()-ymin-70
-
-	ItemRackSettings.IconPos = math.deg(math.atan2(ypos,xpos))
-	ItemRack.MoveMinimap()
+function ItemRack.InitBroker()
+	local texture = ItemRack.GetTextureBySlot(20)
+	texture = [[Interface\AddOns\ItemRack\ItemRackIcon]]
+	ItemRack.Broker = LDB:NewDataObject("ItemRack", {
+		type = "launcher",
+		text = "ItemRack",
+		icon = texture,
+		OnClick = ItemRack.MinimapOnClick,
+		OnTooltipShow = ItemRack.MinimapOnEnter,
+	})
+	ItemRackSettings.minimap = ItemRackSettings.minimap or { hide = false }
+	LDBIcon:Register("ItemRack", ItemRack.Broker, ItemRackSettings.minimap)
+	ItemRack.ShowMinimap()
 end
 
-function ItemRack.MoveMinimap()
-	if ItemRackSettings.ShowMinimap=="ON" then
-		local xpos,ypos
-		local angle = ItemRackSettings.IconPos or -100
-		if ItemRackSettings.SquareMinimap=="ON" then
-			-- brute force method until trig solution figured out - min/max a point on a circle beyond square
-			xpos = 110 * cos(angle)
-			ypos = 110 * sin(angle)
-			xpos = math.max(-82,math.min(xpos,84))
-			ypos = math.max(-86,math.min(ypos,82))
-		else
-			xpos = 80*cos(angle)
-			ypos = 80*sin(angle)
-		end
-		ItemRackMinimapFrame:SetPoint("TOPLEFT","Minimap","TOPLEFT",52-xpos,ypos-52)
-		ItemRackMinimapFrame:Show()
+function ItemRack.ShowMinimap()
+	if ItemRackSettings.ShowMinimap == "ON" then
+		LDBIcon:Show("ItemRack")
 	else
-		ItemRackMinimapFrame:Hide()
+		LDBIcon:Hide("ItemRack")
 	end
 end
 
@@ -1736,41 +1768,25 @@ function ItemRack.MinimapOnClick(self,button)
 		else
 			local xpos,ypos = GetCursorPosition()
 			if ypos>400 then
-				ItemRack.DockWindows("TOPRIGHT",ItemRackMinimapFrame,"BOTTOMRIGHT","VERTICAL")
+				ItemRack.DockWindows("TOPRIGHT",self,"BOTTOMRIGHT","VERTICAL")
 			else
-				ItemRack.DockWindows("BOTTOMRIGHT",ItemRackMinimapFrame,"TOPRIGHT","VERTICAL")
+				ItemRack.DockWindows("BOTTOMRIGHT",self,"TOPRIGHT","VERTICAL")
 			end
-			ItemRack.BuildMenu(20)
+			ItemRack.BuildMenu(20, nil, 4)
 		end
 	else
 		ItemRack.ToggleOptions(self)
 	end
 end
 
-function ItemRack.MinimapOnEnter(self)
-	if ItemRackSettings.MinimapTooltip=="ON" then
-		ItemRack.OnTooltip(self,"ItemRack","Left click: Select a set\nRight click: Open options\nAlt left click: Show hidden sets\nAlt right click: Toggle events\nShift click: Unequip this set")
-	end
-end
-
-
-function ItemRack.MinimapShineUpdate(elapsed)
-	ItemRack.MinimapShineAlpha = ItemRack.MinimapShineAlpha + (elapsed*2*ItemRack.MinimapShineDirection)
-	if ItemRack.MinimapShineAlpha < .1 then
-		ItemRack.StopTimer("MinimapShine")
-		ItemRackMinimapShine:Hide()
-	elseif ItemRack.MinimapShineAlpha > .9 then
-		ItemRack.MinimapShineDirection = -1
-	else
-		ItemRackMinimapShine:SetAlpha(ItemRack.MinimapShineAlpha)
-	end
-end
-
-function ItemRack.MinimapShineFadeIn()
-	ItemRack.MinimapShineAlpha = .1
-	ItemRack.MinimapShineDirection = 1
-	ItemRackMinimapShine:Show()
-	ItemRack.StartTimer("MinimapShine")
+function ItemRack.MinimapOnEnter(tooltip)
+	if ItemRackSettings.MinimapTooltip~="ON" then return end
+	tooltip:AddLine("ItemRack")
+	tooltip:AddLine("Left click: Select a set",.8,.8,.8,1)
+	tooltip:AddLine("Right click: Open options",.8,.8,.8,1)
+	tooltip:AddLine("Alt left click: Show hidden sets",.8,.8,.8,1)
+	tooltip:AddLine("Alt right click: Toggle events",.8,.8,.8,1)
+	tooltip:AddLine("Shift click: Unequip this set",.8,.8,.8,1)
 end
 
 --[[ Non-LoD options support ]]
@@ -1791,6 +1807,17 @@ function ItemRack.ToggleOptions(self,tab)
 end
 
 function ItemRack.ReflectLock(override)
+	if BackdropTemplateMixin then
+		Mixin(ItemRackMenuFrame, BackdropTemplateMixin)
+	end
+	ItemRackMenuFrame:SetBackdrop(
+		{
+			bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+			edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+			tile = true, tileSize = 16, edgeSize = 16,
+			insets = { left = 4, right = 4, top = 4, bottom = 4 }
+		}
+	);
 	if ItemRackUser.Locked=="ON" or override then
 		ItemRackMenuFrame:EnableMouse(0)
 		ItemRackMenuFrame:SetBackdropBorderColor(0,0,0,0)
@@ -1821,6 +1848,9 @@ end
 
 function ItemRack.SetFont(button)
 	local item = _G[button.."Time"]
+	if not item then
+		return
+	end
 	if ItemRackSettings.LargeNumbers=="ON" then
 		item:SetFont("Fonts\\FRIZQT__.TTF",16,"OUTLINE")
 		item:SetTextColor(1,.82,0,1)
@@ -1895,6 +1925,7 @@ function ItemRack.SetSetBindings()
 			if ItemRackUser.Sets[i].key then
 				buttonName = "ItemRack"..UnitName("player")..GetRealmName()..i
 				button = _G[buttonName] or CreateFrame("Button",buttonName,nil,"SecureActionButtonTemplate")
+
 				button:SetAttribute("type","macro")
 				local macrotext = "/script ItemRack.RunSetBinding(\""..i.."\")\n"
 				for slot = 16, 18 do
@@ -1909,7 +1940,7 @@ function ItemRack.SetSetBindings()
 				SetBindingClick(ItemRackUser.Sets[i].key,buttonName)
 			end
 		end
-		AttemptToSaveBindings(GetCurrentBindingSet())
+		SaveBindings(GetCurrentBindingSet())
 	else
 		ItemRack.Print("Cannot save hotkeys in combat, please try again out of combat!")
 	end
@@ -2021,7 +2052,7 @@ end
 -- pushes setname from bags/worn to bank
 function ItemRack.PutBankedSet(setname)
 	if SpellIsTargeting() or GetCursorInfo() then return end
-	local bag,slot,freeBag,freeSlot
+	local inv,bag,slot,freeBag,freeSlot
 	ItemRack.ClearLockList()
 	for _,i in pairs(ItemRackUser.Sets[setname].equip) do
 		if i~=0 then
@@ -2083,7 +2114,7 @@ function ItemRack.GetQueues()
 		if not (ItemRackUser.CurrentSet and ItemRackUser.Sets[ItemRackUser.CurrentSet]) then
 			return ItemRackUser.Queues
 		end
-		
+
 		local currentSet = ItemRackUser.Sets[ItemRackUser.CurrentSet]
 		if not currentSet.Queues then
 			currentSet.Queues = {}
@@ -2100,7 +2131,7 @@ function ItemRack.GetQueuesEnabled()
 		if not (ItemRackUser.CurrentSet and ItemRackUser.Sets[ItemRackUser.CurrentSet]) then
 			return ItemRackUser.QueuesEnabled
 		end
-		
+
 		local currentSet = ItemRackUser.Sets[ItemRackUser.CurrentSet]
 		if not currentSet.QueuesEnabled then
 			currentSet.QueuesEnabled = {}

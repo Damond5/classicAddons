@@ -6,28 +6,29 @@ local filter_util = require 'aux.util.filter'
 local scan_util = require 'aux.util.scan'
 local scan = require 'aux.core.scan'
 
-NORMAL_MODE, FRESH_MODE, EXPIRING_MODE = {}, {}, {} -- TODO expiring
-
-mode = nil
-
 StaticPopupDialogs.AUX_SCAN_ALERT = {
     text = 'One of your alert queries matched!',
     button1 = 'Ok',
     showAlert = 1,
     timeout = 0,
     hideOnEscape = 1,
+    preferredIndex = STATICPOPUP_NUMDIALOGS,
 }
 
+ALL_MODE, NEW_MODE = {}, {}
+
+mode = nil
+
 function aux.event.AUX_LOADED()
-	new_search(nil, NORMAL_MODE)
+	new_search(nil, ALL_MODE)
 end
 
 function update_mode(mode)
     _M.mode = mode
-	if mode == NORMAL_MODE then
-		mode_button:SetText('Normal')
+	if mode == ALL_MODE then
+        mode_button:SetBackdropColor(aux.color.content.background())
     else
-        mode_button:SetText('Fresh')
+        mode_button:SetBackdropColor(aux.color.state.enabled())
 	end
 end
 
@@ -132,7 +133,7 @@ function update_start_stop()
 	end
 end
 
-function start_fresh_scan(query, search, continuation)
+function start_live_scan(query, search, continuation)
 
     local ignore_page
     if not search then
@@ -160,6 +161,7 @@ function start_fresh_scan(query, search, continuation)
             if not ignore_page then
                 if (search.alert_validator or pass)(auction_record) then
                     StaticPopup_Show('AUX_SCAN_ALERT') -- TODO retail improve this
+                    FlashClientIcon()
                 end
                 tinsert(new_records, auction_record)
             end
@@ -183,7 +185,7 @@ function start_fresh_scan(query, search, continuation)
 
             query.blizzard_query.first_page = next_page
             query.blizzard_query.last_page = next_page
-			start_fresh_scan(query, search)
+			start_live_scan(query, search)
 		end,
 		on_abort = function()
 			aux.status_bar:update_status(1, 1)
@@ -296,7 +298,7 @@ function M.execute(_, resume, mode)
 	if not queries then
 		aux.print('Invalid filter:', error)
 		return
-	elseif mode == FRESH_MODE then
+	elseif mode == NEW_MODE then
 		if #queries > 1 then
 			aux.print('Error: The real time mode does not support multi-queries')
 			return
@@ -330,8 +332,8 @@ function M.execute(_, resume, mode)
 	update_start_stop()
     search_box:ClearFocus()
 	set_subtab(RESULTS)
-	if mode == FRESH_MODE then
-		start_fresh_scan(queries[1], nil, continuation)
+	if mode == NEW_MODE then
+		start_live_scan(queries[1], nil, continuation)
 	else
 		start_search(queries, continuation)
 	end

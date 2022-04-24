@@ -29,14 +29,11 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Skillet")
 Skillet.L = L
 
 -- Get version info from the .toc file
-local MAJOR_VERSION = GetAddOnMetadata("Skillet-Classic", "Version");
-local PACKAGE_VERSION = GetAddOnMetadata("Skillet-Classic", "X-Curse-Packaged-Version");
-local ADDON_BUILD = (select(4, GetBuildInfo())) < 20000 and "Classic" or "Retail"
-Skillet.version = MAJOR_VERSION
-Skillet.package = PACKAGE_VERSION
-Skillet.build = ADDON_BUILD
+Skillet.version = GetAddOnMetadata("Skillet-Classic", "Version");
+Skillet.curseID = GetAddOnMetadata("Skillet-Classic", "X-Curse-Project-ID");
+Skillet.build = (select(4, GetBuildInfo())) < 20000 and "Classic" or "Retail"
 Skillet.project = WOW_PROJECT_ID
-local isClassic = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
+Skillet.isClassic = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
 
 Skillet.isCraft = false			-- true for the Blizzard Craft UI, false for the Blizzard TradeSkill UI
 Skillet.lastCraft = false		-- help events know when to call ConfigureRecipeControls()
@@ -68,6 +65,7 @@ local defaults = {
 		use_blizzard_for_followers = false,				-- not in Classic
 		hide_blizzard_frame = true,						-- primarily for debugging
 		support_crafting = true,
+		queue_crafts = false,
 		include_craftbuttons = true,
 		include_tradebuttons = true,
 		search_includes_reagents = true,
@@ -202,6 +200,10 @@ function Skillet:OnInitialize()
 		self.db.global.cachedGuildbank = nil
 	end
 
+	if self.curseID ~= "447401" then
+		print("|cff8888ffSkillet|r: Your version of Skillet-Classic may be out of date.\nGo to https://www.curseforge.com/wow/addons/skillet \nand download the latest version.")
+		self.cursePopup = true
+	end
 --
 -- Change the dataVersion when (major) code changes
 -- obsolete the current saved variables database.
@@ -248,6 +250,8 @@ function Skillet:OnInitialize()
 -- Initialize global data
 --
 	self.db.global.locale = GetLocale()
+	self.db.global.version = self.version	-- save a copy for
+	self.db.global.curseID = self.curseID	-- post-mortem purposes
 	if not self.db.global.recipeDB then
 		self.db.global.recipeDB = {}
 	end
@@ -324,6 +328,18 @@ function Skillet:OnInitialize()
 --
 -- Create a static popup for changing professions
 --
+StaticPopupDialogs["SKILLET_OLD_PROJECT"] = {
+	text = "Your version of Skillet-Classic may be out of date.\nGo to https://www.curseforge.com/wow/addons/skillet \nand download the latest version.",
+	button1 = OKAY,
+	OnAccept = function( self )
+		return
+	end,
+	timeout = 30,
+	exclusive = 1,
+	whileDead = 1,
+	hideOnEscape = 1
+};
+
 StaticPopupDialogs["SKILLET_CONTINUE_CHANGE"] = {
 	text = "Skillet-Classic\n"..L["Press Okay to continue changing professions"],
 	button1 = OKAY,
@@ -583,11 +599,12 @@ function Skillet:OnEnable()
 	self:RegisterEvent("TRADE_SKILL_SHOW")
 	self:RegisterEvent("TRADE_SKILL_UPDATE")
 	self:RegisterEvent("TRADE_SKILL_NAME_UPDATE")
-	self:RegisterEvent("CRAFT_CLOSE")				-- craft event (could call SkilletClose)
-	self:RegisterEvent("CRAFT_SHOW")				-- craft event (could call SkilletShow)
-	self:RegisterEvent("CRAFT_UPDATE")				-- craft event
-	self:RegisterEvent("UNIT_PET_TRAINING_POINTS")	-- craft event
-
+	if not TSM_API then
+		self:RegisterEvent("CRAFT_CLOSE")			-- craft event (could call SkilletClose)
+		self:RegisterEvent("CRAFT_SHOW")			-- craft event (could call SkilletShow)
+		self:RegisterEvent("CRAFT_UPDATE")			-- craft event
+		self:RegisterEvent("UNIT_PET_TRAINING_POINTS")	-- craft event
+	end
 	self:RegisterEvent("UNIT_INVENTORY_CHANGED") 	-- Not sure if this is helpful but we will track it.
 	self:RegisterEvent("UNIT_PORTRAIT_UPDATE")		-- Not sure if this is helpful but we will track it.
 	self:RegisterEvent("SPELLS_CHANGED")			-- Not sure if this is helpful but we will track it.
@@ -858,6 +875,17 @@ end
 function Skillet:SkilletShow()
 	DA.DEBUG(0,"SkilletShow(), currentTrade= "..tostring(self.currentTrade))
 	self.linkedSkill, self.currentPlayer, self.isGuild = Skillet:IsTradeSkillLinked()
+--
+-- Test for old CurseForge ID and warn user.
+--
+	if self.curseID ~= "447401" then
+		if self.cursePopup then
+			StaticPopup_Show("SKILLET_OLD_PROJECT", self.curseID)
+			self.cursePopup = false
+		end
+		print("|cff8888ffSkillet|r: Your version of Skillet-Classic may be out of date.\nGo to https://www.curseforge.com/wow/addons/skillet \nand download the latest version.")
+	end
+--
 	if self.linkedSkill then
 		if not self.currentPlayer then
 			DA.DEBUG(0,"Waiting for TRADE_SKILL_NAME_UPDATE")
@@ -928,10 +956,10 @@ function Skillet:SkilletShowWindow()
 		self.db.realm.skillDB[self.currentPlayer][self.currentTrade] = {}
 	end
 	if not self:RescanTrade() then
-		if TSMAPI_FOUR or ZygorGuidesViewerClassicSettings then
-			if TSMAPI_FOUR then
+		if TSM_API or ZygorGuidesViewerClassicSettings then
+			if TSM_API then
 				DA.CHAT(L["Conflict with the addon TradeSkillMaster"])
-				self.db.profile.TSMAPI_FOUR = true
+				self.db.profile.TSM_API = true
 			end
 			if ZygorGuidesViewerClassicSettings then
 				DA.CHAT(L["Conflict with the addon Zygor Guides"])

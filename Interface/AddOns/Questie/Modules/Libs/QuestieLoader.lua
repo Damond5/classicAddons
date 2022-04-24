@@ -2,13 +2,8 @@
 ---@class QuestieLoader
 QuestieLoader = {}
 
-local alreadyExist = false;
-if(Questie) then
-  alreadyExist = true;
-end
-
 ---@class Module
-local module = {}
+local moduleClassDefinition = {}
 
 -- ["ModuleName"] = moduleReference
 ---@type table<string, Module>
@@ -43,3 +38,10 @@ function QuestieLoader:ImportModule(name)
     return modules[name]
   end
 end
+
+function QuestieLoader:PopulateGlobals() -- called when debugging is enabled
+  for name, module in pairs(modules) do
+    _G[name] = module
+  end
+end
+

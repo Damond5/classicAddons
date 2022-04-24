@@ -30,9 +30,6 @@ L["OPTIONS_GENERALSETTINGS_HEALTHBAR_TEXTURE"] = "Lebensbalken-Textur"
 L["OPTIONS_GENERALSETTINGS_TRANSPARENCY_ANCHOR_TITLE"] = "Transparenz-Einstellungen"
 L["OPTIONS_GENERALSETTINGS_TRANSPARENCY_RANGECHECK"] = "Entfernungsprüfung"
 L["OPTIONS_GENERALSETTINGS_TRANSPARENCY_RANGECHECK_ALPHA"] = "Entfernungs-Transparenz"
-L["OPTIONS_GENERALSETTINGS_TRANSPARENCY_RANGECHECK_ENABLED"] = "Verwende Entfernungsprüfung"
-L["OPTIONS_GENERALSETTINGS_TRANSPARENCY_RANGECHECK_ENABLED_DESC"] = [=[Einheiten, die ausserhalb der Reichweite sind, werden transparenter dargestellt.
-|cFFFFFF00Wichtig|r: Wähle den richtigen Zauber, den du für die Reichweitenprüfung verwendet willst, aus.]=]
 L["OPTIONS_GENERALSETTINGS_TRANSPARENCY_RANGECHECK_SPEC_DESC"] = "Für diese Spezialisierung verwendeter Zauber zur Entfernungsprüfung"
 L["OPTIONS_HOSTILE"] = "Feindlich"
 L["OPTIONS_NEUTRAL"] = "Neutral"
@@ -51,24 +48,29 @@ L["OPTIONS_PROFILE_ERROR_PROFILENAME"] = "Ungültiger Profilname"
 L["OPTIONS_PROFILE_ERROR_STRINGINVALID"] = "Ungültige Profildatei."
 L["OPTIONS_PROFILE_ERROR_WRONGTAB"] = [=[Ungültige Profildatei.
 Importiere Skripte oder Mods im Skript-Tab.]=]
---[[Translation missing --]]
---[[ L["OPTIONS_PROFILE_IMPORT_OVERWRITE"] = ""--]] 
+L["OPTIONS_PROFILE_IMPORT_OVERWRITE"] = "Das Profil '%s' existiert bereits. Soll es überschrieben werden?"
 L["OPTIONS_SETTINGS_COPIED"] = "Einstellungen kopiert."
 L["OPTIONS_SETTINGS_FAIL_COPIED"] = "Fehler beim kopieren der Einstllungen für den aktuell ausgewählten Reiter."
 L["OPTIONS_SHADOWCOLOR"] = "Schatten-Farbe"
 L["OPTIONS_SIZE"] = "Größe"
 L["OPTIONS_STATUSBAR_TEXT"] = "Profile, Mods, Skripte, Animationen und Farbtabellen können jetzt von |cFFFFAA00http://wago.io|r importiert werden."
 L["OPTIONS_TABNAME_ADVANCED"] = "Erweitert"
-L["OPTIONS_TABNAME_ANIMATIONS"] = "Animationen"
+L["OPTIONS_TABNAME_ANIMATIONS"] = "Zauberfeedback"
 L["OPTIONS_TABNAME_AUTO"] = "Automatisierung"
 L["OPTIONS_TABNAME_BUFF_LIST"] = "Buff-Liste"
 L["OPTIONS_TABNAME_BUFF_SETTINGS"] = "Buff Einstellungen"
 L["OPTIONS_TABNAME_BUFF_SPECIAL"] = "Spezielle Buffs"
 L["OPTIONS_TABNAME_BUFF_TRACKING"] = "Buff-Verfolgung"
-L["OPTIONS_TABNAME_COLORSNPC"] = "NPC-Farben"
-L["OPTIONS_TABNAME_CREDITS"] = "Credits"
+--[[Translation missing --]]
+L["OPTIONS_TABNAME_CASTBAR"] = "Cast Bar"
+--[[Translation missing --]]
+L["OPTIONS_TABNAME_CASTCOLORS"] = "\"Cast Colors and Names\""
+--[[Translation missing --]]
+L["OPTIONS_TABNAME_COMBOPOINTS"] = "Combo Points"
 L["OPTIONS_TABNAME_GENERALSETTINGS"] = "Allg. Einstellungen"
 L["OPTIONS_TABNAME_MODDING"] = "Modding"
+--[[Translation missing --]]
+L["OPTIONS_TABNAME_NPC_COLORNAME"] = "Npc Colors and Names"
 L["OPTIONS_TABNAME_NPCENEMY"] = "Feindliche NPCs"
 L["OPTIONS_TABNAME_NPCFRIENDLY"] = "Freundliche NPCs"
 L["OPTIONS_TABNAME_PERSONAL"] = "Pers. Ressourcen"
@@ -76,6 +78,8 @@ L["OPTIONS_TABNAME_PLAYERENEMY"] = "Feindliche Spieler"
 L["OPTIONS_TABNAME_PLAYERFRIENDLY"] = "Freundliche Spieler"
 L["OPTIONS_TABNAME_PROFILES"] = "Profile"
 L["OPTIONS_TABNAME_SCRIPTING"] = "Skripte"
+--[[Translation missing --]]
+L["OPTIONS_TABNAME_SEARCH"] = "Search"
 L["OPTIONS_TABNAME_STRATA"] = "Level & Strata"
 L["OPTIONS_TABNAME_TARGET"] = "Ziel"
 L["OPTIONS_TABNAME_THREAT"] = "Bedrohung / Aggro"
@@ -112,4 +116,3 @@ L["OPTIONS_THREAT_MODIFIERS_HEALTHBARCOLOR"] = "Lebensbalkenfarbe"
 L["OPTIONS_THREAT_MODIFIERS_NAMECOLOR"] = "Farbe des Namens"
 L["OPTIONS_XOFFSET"] = "X-Offset"
 L["OPTIONS_YOFFSET"] = "Y-Offset"
-

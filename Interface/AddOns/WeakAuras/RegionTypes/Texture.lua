@@ -1,4 +1,5 @@
 if not WeakAuras.IsCorrectVersion() then return end
+local AddonName, Private = ...
 
 local L = WeakAuras.L;
 
@@ -10,8 +11,9 @@ local default = {
   desaturate = false,
   width = 200,
   height = 200,
-  color = {1, 1, 1, 0.75},
+  color = {1, 1, 1, 1},
   blendMode = "BLEND",
+  textureWrapMode = "CLAMPTOBLACKADDITIVE",
   rotation = 0,
   discrete_rotation = 0,
   mirror = false,
@@ -68,6 +70,7 @@ WeakAuras.regionPrototype.AddProperties(properties, default);
 
 local function create(parent)
   local region = CreateFrame("FRAME", nil, UIParent);
+  region.regionType = "texture"
   region:SetMovable(true);
   region:SetResizable(true);
   region:SetMinResize(1, 1);
@@ -79,16 +82,13 @@ local function create(parent)
   texture:SetAllPoints(region);
 
   WeakAuras.regionPrototype.create(region);
-  region.values = {};
-
-  region.AnchorSubRegion = WeakAuras.regionPrototype.AnchorSubRegion
 
   return region;
 end
 
 local function modify(parent, region, data)
   WeakAuras.regionPrototype.modify(parent, region, data);
-  WeakAuras.SetTextureOrAtlas(region.texture, data.texture);
+  WeakAuras.SetTextureOrAtlas(region.texture, data.texture, data.textureWrapMode, data.textureWrapMode);
   region.texture:SetDesaturated(data.desaturate)
   region:SetWidth(data.width);
   region:SetHeight(data.height);
@@ -184,7 +184,7 @@ local function modify(parent, region, data)
 
   function region:Update()
     if region.state.texture then
-      WeakAuras.SetTextureOrAtlas(region.texture, region.state.texture);
+      WeakAuras.SetTextureOrAtlas(region.texture, region.state.texture, data.textureWrapMode, data.textureWrapMode);
     end
   end
 
@@ -238,4 +238,8 @@ local function modify(parent, region, data)
   WeakAuras.regionPrototype.modifyFinish(parent, region, data);
 end
 
-WeakAuras.RegisterRegionType("texture", create, modify, default, properties);
+local function validate(data)
+  Private.EnforceSubregionExists(data, "subbackground")
+end
+
+WeakAuras.RegisterRegionType("texture", create, modify, default, properties, validate);

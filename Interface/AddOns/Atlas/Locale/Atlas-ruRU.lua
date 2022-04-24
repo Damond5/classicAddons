@@ -1,10 +1,10 @@
--- $Id: Atlas-ruRU.lua 337 2020-01-01 14:49:58Z arith $
+-- $Id: Atlas-ruRU.lua 374 2022-01-26 14:33:01Z arithmandar $
 --[[
 
 	Atlas, a World of Warcraft instance map browser
 	Copyright 2005 ~ 2010 - Dan Gilbert <dan.b.gilbert at gmail dot com>
 	Copyright 2010 - Lothaer <lothayer at gmail dot com>, Atlas Team
-	Copyright 2011 ~ 2020 - Arith Hsu, Atlas Team <atlas.addon at gmail dot com>
+	Copyright 2011 ~ 2022 - Arith Hsu, Atlas Team <atlas.addon at gmail dot com>
 
 	This file is part of Atlas.
 
@@ -30,8 +30,8 @@ local L = AceLocale:NewLocale("Atlas", "ruRU", false);
 -- Atlas Russian Localization
 -- Compiled by Eugene Filatov, bigoblin, StingerSoft
 -- Last Update: 23.01.2011
--- $Date: 2020-01-01 14:49:58 +0000 (Wed, 01 Jan 2020) $
--- $Revision: 337 $
+-- $Date: 2022-01-26 14:33:01 +0000 (Wed, 26 Jan 2022) $
+-- $Revision: 374 $
 
 if ( GetLocale() == "ruRU" ) then
 -- Define the leading strings to be ignored while sorting
@@ -89,6 +89,7 @@ L["ATLAS_DDL_EXPANSION_LEGION1"] = "Подземелья Легиона"
 L["ATLAS_DDL_EXPANSION_LEGION2"] = "Рейды Легиона"
 L["ATLAS_DDL_EXPANSION_MOP"] = "Подземелья Mists of Pandaria"
 L["ATLAS_DDL_EXPANSION_OLD"] = "Подземелья Старого Мира"
+L["ATLAS_DDL_EXPANSION_SHADOWLANDS"] = "Подземелья и рейды Shadowlands"
 L["ATLAS_DDL_EXPANSION_WOD"] = "Подземелья Warlords of Draenor"
 L["ATLAS_DDL_EXPANSION_WOTLK"] = "Подземелья Wrath of the Lich King"
 L["ATLAS_DDL_LEVEL"] = "Уровню"
@@ -100,6 +101,7 @@ L["ATLAS_DDL_LEVEL_120PLUS"] = "Уровень подземелья 120+"
 L["ATLAS_DDL_LEVEL_120TO130"] = "Уровень подземелья 120-130"
 L["ATLAS_DDL_LEVEL_130PLUS"] = "Уровень подземелья 130+"
 L["ATLAS_DDL_LEVEL_45TO60"] = "Подземелья уровня 45-60"
+L["ATLAS_DDL_LEVEL_60PLUS"] = "Подземелья и рейды уровня 60+"
 L["ATLAS_DDL_LEVEL_60TO70"] = "Подземелья уровня 60-70"
 L["ATLAS_DDL_LEVEL_70TO80"] = "Подземелья уровня 70-80"
 L["ATLAS_DDL_LEVEL_80TO85"] = "Подземелья уровня 80-85"

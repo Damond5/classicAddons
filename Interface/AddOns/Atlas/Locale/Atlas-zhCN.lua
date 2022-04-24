@@ -1,10 +1,10 @@
--- $Id: Atlas-zhCN.lua 337 2020-01-01 14:49:58Z arith $
+-- $Id: Atlas-zhCN.lua 374 2022-01-26 14:33:01Z arithmandar $
 --[[
 
 	Atlas, a World of Warcraft instance map browser
 	Copyright 2005 ~ 2010 - Dan Gilbert <dan.b.gilbert at gmail dot com>
 	Copyright 2010 - Lothaer <lothayer at gmail dot com>, Atlas Team
-	Copyright 2011 ~ 2020 - Arith Hsu, Atlas Team <atlas.addon at gmail dot com>
+	Copyright 2011 ~ 2022 - Arith Hsu, Atlas Team <atlas.addon at gmail dot com>
 
 	This file is part of Atlas.
 
@@ -78,29 +78,38 @@ L["ATLAS_DDL_CONTINENT_PANDARIA"] = "潘达利亚副本"
 L["ATLAS_DDL_CONTINENT_ZANDALAR"] = "赞达拉副本"
 L["ATLAS_DDL_EXPANSION"] = "资料片"
 L["ATLAS_DDL_EXPANSION_BC"] = "《燃烧的远征》副本"
-L["ATLAS_DDL_EXPANSION_BFA"] = "争霸艾泽拉斯副本"
+L["ATLAS_DDL_EXPANSION_BFA"] = "《争霸艾泽拉斯》副本"
 L["ATLAS_DDL_EXPANSION_CATA"] = "《大地的裂变》副本"
 L["ATLAS_DDL_EXPANSION_LEGION"] = "《军团再临》副本"
 L["ATLAS_DDL_EXPANSION_LEGION1"] = "军团再临地下城"
 L["ATLAS_DDL_EXPANSION_LEGION2"] = "军团再临团队"
 L["ATLAS_DDL_EXPANSION_MOP"] = "《熊猫人之谜》副本"
-L["ATLAS_DDL_EXPANSION_OLD"] = "旧世界副本"
+L["ATLAS_DDL_EXPANSION_OLD"] = "《经典旧世》副本"
+L["ATLAS_DDL_EXPANSION_SHADOWLANDS"] = "《暗影国度》副本"
 L["ATLAS_DDL_EXPANSION_WOD"] = "《德拉诺之王》副本"
 L["ATLAS_DDL_EXPANSION_WOTLK"] = "《巫妖王之怒》副本"
 L["ATLAS_DDL_LEVEL"] = "等级"
 L["ATLAS_DDL_LEVEL_100PLUS"] = "100 级以上副本"
 L["ATLAS_DDL_LEVEL_100TO110"] = "100-110 级副本"
+L["ATLAS_DDL_LEVEL_10TO30"] = "副本等级 10-30"
 L["ATLAS_DDL_LEVEL_110PLUS"] = "110 级以上副本"
 L["ATLAS_DDL_LEVEL_110TO120"] = "110-120 级副本"
 L["ATLAS_DDL_LEVEL_120PLUS"] = "120 级以上副本"
 L["ATLAS_DDL_LEVEL_120TO130"] = "120-130 级副本"
 L["ATLAS_DDL_LEVEL_130PLUS"] = "130 级以上副本"
+L["ATLAS_DDL_LEVEL_30TO35"] = "副本等级 30-35"
+L["ATLAS_DDL_LEVEL_35TO40"] = "副本等级 35-40"
+L["ATLAS_DDL_LEVEL_40TO45"] = "副本等级 40-45"
+L["ATLAS_DDL_LEVEL_45TO50"] = "副本等级 45-50"
 L["ATLAS_DDL_LEVEL_45TO60"] = "45-60 级副本"
+L["ATLAS_DDL_LEVEL_50TO60"] = "副本等级 50-60"
+L["ATLAS_DDL_LEVEL_60PLUS"] = "60 级以上副本"
 L["ATLAS_DDL_LEVEL_60TO70"] = "60-70 级副本"
 L["ATLAS_DDL_LEVEL_70TO80"] = "70-80 级副本"
 L["ATLAS_DDL_LEVEL_80TO85"] = "80-85 级副本"
 L["ATLAS_DDL_LEVEL_85TO90"] = "85-90 级以副本"
 L["ATLAS_DDL_LEVEL_90TO100"] = "90-100 级以副本"
+L["ATLAS_DDL_LEVEL_UNDER30"] = "等级30之下副本"
 L["ATLAS_DDL_LEVEL_UNDER45"] = "45 级以下副本"
 L["ATLAS_DDL_PARTYSIZE"] = "副本规模"
 L["ATLAS_DDL_PARTYSIZE_10"] = "10人副本"

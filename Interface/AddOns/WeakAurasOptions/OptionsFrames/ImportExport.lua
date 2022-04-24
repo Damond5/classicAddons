@@ -1,4 +1,5 @@
 if not WeakAuras.IsCorrectVersion() then return end
+local AddonName, OptionsPrivate = ...
 
 -- Lua APIs
 local strtrim, strsub = strtrim, strsub
@@ -49,13 +50,13 @@ local function ConstructImportExport(frame)
       if(id) then
         local displayStr;
         if(mode == "export") then
-          displayStr = WeakAuras.DisplayToString(id, true);
+          displayStr = OptionsPrivate.Private.DisplayToString(id, true);
         elseif(mode == "table") then
-          displayStr = WeakAuras.DataToString(id);
+          displayStr = OptionsPrivate.Private.DataToString(id);
         end
         input.editBox:SetMaxBytes(nil);
         input.editBox:SetScript("OnEscapePressed", function() group:Close(); end);
-        input.editBox:SetScript("OnChar", function() input:SetText(displayStr); input.editBox:HighlightText(); end);
+        input.editBox:SetScript("OnTextChanged", function() input:SetText(displayStr); input.editBox:HighlightText(); end);
         input.editBox:SetScript("OnMouseUp", function() input.editBox:HighlightText(); end);
         input:SetLabel(id.." - "..#displayStr);
         input.button:Hide();
@@ -64,31 +65,14 @@ local function ConstructImportExport(frame)
         input:SetFocus();
       end
     elseif(mode == "import") then
-      local textBuffer, i, lastPaste = {}, 0, 0
-      local function clearBuffer(self)
-        self:SetScript('OnUpdate', nil)
-        local pasted = strtrim(table.concat(textBuffer))
-        input.editBox:ClearFocus();
-        pasted = pasted:match( "^%s*(.-)%s*$" );
-        if (#pasted > 20) then
-          WeakAuras.Import(pasted);
-          input:SetLabel(L["Processed %i chars"]:format(i));
-          input.editBox:SetMaxBytes(2500);
-          input.editBox:SetText(strsub(pasted, 1, 2500));
+      input.editBox:SetScript("OnTextChanged", function(self)
+        local pasted = self:GetText()
+        pasted = pasted:match("^%s*(.-)%s*$")
+        if #pasted > 20 then
+          WeakAuras.Import(pasted)
         end
-      end
-
-      input.editBox:SetScript('OnChar', function(self, c)
-        if lastPaste ~= GetTime() then
-          textBuffer, i, lastPaste = {}, 0, GetTime()
-          self:SetScript('OnUpdate', clearBuffer)
-        end
-        i = i + 1
-        textBuffer[i] = c
       end)
-
       input.editBox:SetText("");
-      input.editBox:SetMaxBytes(2500);
       input.editBox:SetScript("OnEscapePressed", function() group:Close(); end);
       input.editBox:SetScript("OnMouseUp", nil);
       input:SetLabel(L["Paste text below"]);
@@ -105,7 +89,7 @@ local function ConstructImportExport(frame)
   return group
 end
 
-function WeakAuras.ImportExport(frame)
+function OptionsPrivate.ImportExport(frame)
   importexport = importexport or ConstructImportExport(frame)
   return importexport
 end

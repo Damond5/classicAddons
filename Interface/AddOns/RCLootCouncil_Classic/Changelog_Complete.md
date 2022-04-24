@@ -1,3 +1,87 @@
+# 0.14.1
+### Bugfixes
+
+* *Heart of Darkness should now actually be autolootable.*
+* *Selected round robin candidate is now truly random.*
+
+
+
+# 0.14.0
+
+## Changes
+
+### Always auto award list
+
+Added an option to choose items that should always be auto awarded. Located in the 'Awards' tab of the Master Looter options. Items can be added by itemID, name or item link.
+
+### TradeUI
+
+Implemented hotfix for handling duplicate items.
+Not as robust as I would like, but it should get the job done for now.
+
+### Burning Crusade Classic
+
+Updated .toc for patch 2.5.3.
+
+Added `Heart of Darkness` and `Mark of the Illidari` to the rep items loot list.
+
+### Bugfixes
+
+* *Fixed issue with `/rc remove` command.*
+
+# 0.13.2
+
+## Changes
+
+### Classic
+
+Updated for patch 1.14.1.
+
+### Burning Crusade Classic
+
+Updated for patch 2.5.2.
+
+# 0.13.1
+
+## Changes
+
+Added a fix for Blizzard breaking Dropdowns when using Master Loot.
+
+### Burning Crusade
+
+Wowhead links now points to `tbc.wowhead.com` (CurseClassic#144).
+
+## Bugfixes
+
+* *Using the observe feature could occasionally cause errors after `/reload`ing (CurseClassic#146).*
+
+# 0.13.0
+
+## Changes
+
+Updated for Classic Era and Burning Crusade Classic.
+
+Frame z-level issues are no longer a thing. Credits to enajork (#206).
+
+# v0.12.1
+
+## Changes 
+
+### Naxxramas 
+
+Added Wartorn Scraps and Word of Thawing to the round robin distributon list (#34).  
+Splinter of Atiesh is now ignored by default as it's not tradeable.
+
+# v0.12.0
+
+Updated .toc for patch 1.13.6.  
+Added patch 1.13.6 to history mass deletion.
+
+## Bugfixes
+
+* *Fixed issue with `Award Later` when running with `Auto Start` (CurseClassic#116).*
+* *Clicking cancel on the Session Frame while a session was running could break the addon (CurseClassic#123).*
+
 # v0.11.2
 ## Bugfixes
 * *Fixed Druid related issues causing all kinds of trouble in the latest version (CurseClassic#112,#113,#114).*

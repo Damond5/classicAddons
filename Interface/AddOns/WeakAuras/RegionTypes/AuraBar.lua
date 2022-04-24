@@ -1,13 +1,14 @@
 if not WeakAuras.IsCorrectVersion() then return end
+local AddonName, Private = ...
 
 local SharedMedia = LibStub("LibSharedMedia-3.0");
 local L = WeakAuras.L;
 
 -- Default settings
 local default = {
-  icon = true,
+  icon = false,
   desaturate = false,
-  auto = true,
+  iconSource = -1,
   texture = "Blizzard",
   width = 200,
   height = 15,
@@ -34,12 +35,7 @@ local default = {
   icon_side = "RIGHT",
   icon_color = {1.0, 1.0, 1.0, 1.0},
   frameStrata = 1,
-  zoom = 0,
-  subRegions = {
-    [1] = {
-      ["type"] = "aurabar_bar"
-    }
-  }
+  zoom = 0
 };
 
 WeakAuras.regionPrototype.AddAdjustedDurationToDefault(default);
@@ -54,17 +50,28 @@ local properties = {
     type = "color",
   },
   icon_visible = {
-    display = L["Icon Visible"],
+    display = {L["Icon"], L["Visibility"]},
     setter = "SetIconVisible",
     type = "bool"
   },
   icon_color = {
-    display = L["Icon Color"],
+    display = {L["Icon"], L["Color"]},
     setter = "SetIconColor",
     type = "color"
   },
+  iconSource = {
+    display = {L["Icon"], L["Source"]},
+    setter = "SetIconSource",
+    type = "list",
+    values = {}
+  },
+  displayIcon = {
+    display = {L["Icon"], L["Fallback"]},
+    setter = "SetIcon",
+    type = "icon",
+  },
   desaturate = {
-    display = L["Icon Desaturate"],
+    display = {L["Icon"], L["Desaturate"]},
     setter = "SetIconDesaturated",
     type = "bool",
   },
@@ -74,12 +81,12 @@ local properties = {
     type = "color"
   },
   sparkColor = {
-    display = L["Spark Color"],
+    display = {L["Spark"], L["Color"]},
     setter = "SetSparkColor",
     type = "color"
   },
   sparkHeight = {
-    display = L["Spark Height"],
+    display = {L["Spark"], L["Height"]},
     setter = "SetSparkHeight",
     type = "number",
     min = 1,
@@ -87,7 +94,7 @@ local properties = {
     bigStep = 1
   },
   sparkWidth = {
-    display = L["Spark Width"],
+    display = {L["Spark"], L["Width"]},
     setter = "SetSparkWidth",
     type = "number",
     min = 1,
@@ -116,23 +123,21 @@ local properties = {
     display = L["Orientation"],
     setter = "SetOrientation",
     type = "list",
-    values = WeakAuras.orientation_types
+    values = Private.orientation_types
   },
   inverse = {
     display = L["Inverse"],
     setter = "SetInverse",
     type = "bool"
-  }
+  },
 };
 
 WeakAuras.regionPrototype.AddProperties(properties, default);
 
 local function GetProperties(data)
-  local overlayInfo = WeakAuras.GetOverlayInfo(data);
+  local overlayInfo = Private.GetOverlayInfo(data);
+  local auraProperties = CopyTable(properties)
   if (overlayInfo and next(overlayInfo)) then
-    local auraProperties = {};
-    WeakAuras.DeepCopy(properties, auraProperties);
-
     for id, display in ipairs(overlayInfo) do
       auraProperties["overlays." .. id] = {
         display = string.format(L["%s Overlay Color"], display),
@@ -141,11 +146,10 @@ local function GetProperties(data)
         type = "color",
       }
     end
-
-    return auraProperties;
-  else
-    return CopyTable(properties);
   end
+
+  auraProperties.iconSource.values = Private.IconSources(data)
+  return auraProperties;
 end
 
 -- Returns tex Coord for 90° rotations + x or y flip
@@ -307,7 +311,6 @@ local barPrototype = {
           local extraTexture = self:CreateTexture(nil, "ARTWORK");
           extraTexture:SetSnapToPixelGrid(false)
           extraTexture:SetTexelSnappingBias(0)
-          extraTexture:SetTexture(self:GetStatusBarTexture(), extraTextureWrapMode, extraTextureWrapMode);
           extraTexture:SetDrawLayer("ARTWORK", min(index, 7));
           self.extraTextures[index] = extraTexture;
         end
@@ -353,6 +356,9 @@ local barPrototype = {
         if (self.additionalBarsClip) then
           startProgress = max(0, min(1, startProgress));
           endProgress = max(0, min(1, endProgress));
+        else
+          startProgress = max(-10, min(11, startProgress));
+          endProgress = max(-10, min(11, endProgress));
         end
 
         if ((endProgress - startProgress) == 0) then
@@ -367,6 +373,14 @@ local barPrototype = {
             extraTexture:SetVertexColor(unpack(color));
           else
             extraTexture:SetVertexColor(1, 1, 1, 1);
+          end
+
+          local texture = self.additionalBarsTextures and self.additionalBarsTextures[index];
+          if texture then
+            local texturePath = SharedMedia:Fetch("statusbar", texture) or ""
+            extraTexture:SetTexture(texturePath, extraTextureWrapMode, extraTextureWrapMode)
+          else
+            extraTexture:SetTexture(self:GetStatusBarTexture(), extraTextureWrapMode, extraTextureWrapMode);
           end
 
           local xOffset = 0;
@@ -416,6 +430,7 @@ local barPrototype = {
   ["OnSizeChanged"] = function(self, width, height)
     self:UpdateProgress();
     self:UpdateAdditionalBars();
+    self:GetParent().subRegionEvents:Notify("OnRegionSizeChanged")
   end,
 
   -- Blizzard like SetMinMaxValues
@@ -450,13 +465,23 @@ local barPrototype = {
     end
   end,
 
-  ["SetAdditionalBars"] = function(self, additionalBars, colors, min, max, inverse, overlayclip)
+  ["SetAdditionalBars"] = function(self, additionalBars, colors, textures, min, max, inverse, overlayclip)
     self.additionalBars = additionalBars;
     self.additionalBarsColors = colors;
+    self.additionalBarsTextures = textures;
     self.additionalBarsMin = min or 0;
     self.additionalBarsMax = max or 0;
     self.additionalBarsInverse = inverse;
     self.additionalBarsClip = overlayclip;
+    self:UpdateAdditionalBars();
+  end,
+
+  ["GetAdditionalBarsInverse"] = function(self)
+    return self.additionalBarsInverse
+  end,
+
+  ["SetAdditionalBarsInverse"] = function(self, value)
+    self.additionalBarsInverse = value;
     self:UpdateAdditionalBars();
   end,
 
@@ -756,11 +781,11 @@ local funcs = {
 
       selfPoint = selfPoint or "CENTER"
 
-      if not WeakAuras.point_types[selfPoint] then
+      if not Private.point_types[selfPoint] then
         selfPoint = "CENTER"
       end
 
-      if not WeakAuras.point_types[anchorPoint] then
+      if not Private.point_types[anchorPoint] then
         anchorPoint = "CENTER"
       end
 
@@ -843,6 +868,7 @@ local funcs = {
     else
       self.bar:SetValue(1 - self.bar:GetValue());
     end
+    self.bar:SetAdditionalBarsInverse(not self.bar:GetAdditionalBarsInverse())
     self.subRegionEvents:Notify("InverseChanged")
   end,
   SetOrientation = function(self, orientation)
@@ -887,6 +913,37 @@ local funcs = {
 
     self:ReOrient()
     self.subRegionEvents:Notify("OrientationChanged")
+  end,
+  SetIcon = function(self, iconPath)
+    if self.displayIcon == iconPath then
+      return
+    end
+    self.displayIcon = iconPath
+    self:UpdateIcon()
+  end,
+  SetIconSource = function(self, source)
+    if self.iconSource == source then
+      return
+    end
+
+    self.iconSource = source
+    self:UpdateIcon()
+  end,
+  UpdateIcon = function(self)
+    local iconPath
+    if self.iconSource == -1 then
+      iconPath = self.state.icon
+    elseif self.iconSource == 0 then
+      iconPath = self.displayIcon
+    else
+      local triggernumber = self.iconSource
+      if triggernumber and self.states[triggernumber] then
+        iconPath = self.states[triggernumber].icon
+      end
+    end
+
+    iconPath = iconPath or self.displayIcon or "Interface\\Icons\\INV_Misc_QuestionMark"
+    WeakAuras.SetTextureOrAtlas(self.icon, iconPath)
   end,
   SetOverlayColor = function(self, id, r, g, b, a)
     self.bar:SetAdditionalBarColor(id, { r, g, b, a});
@@ -939,6 +996,7 @@ local funcs = {
 local function create(parent)
   -- Create overall region (containing everything else)
   local region = CreateFrame("FRAME", nil, parent);
+  region.regionType = "aurabar"
   region:SetMovable(true);
   region:SetResizable(true);
   region:SetMinResize(1, 1);
@@ -981,9 +1039,6 @@ local function create(parent)
   region.icon = icon;
   icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark");
 
-  -- Region variables
-  region.values = {};
-
   local oldSetFrameLevel = region.SetFrameLevel;
   function region.SetFrameLevel(self, frameLevel)
     oldSetFrameLevel(self, frameLevel);
@@ -1021,7 +1076,8 @@ local function modify(parent, region, data)
   -- Localize
   local bar, iconFrame, icon = region.bar, region.iconFrame, region.icon;
 
-  region.useAuto = data.auto and WeakAuras.CanHaveAuto(data);
+  region.iconSource = data.iconSource
+  region.displayIcon = data.displayIcon
 
   -- Adjust region size
   region:SetWidth(data.width);
@@ -1045,9 +1101,15 @@ local function modify(parent, region, data)
   region.desaturateIcon = data.desaturate
   region.zoom = data.zoom
 
-  region.overlays = {};
   if (data.overlays) then
-    WeakAuras.DeepCopy(data.overlays, region.overlays);
+    region.overlays = CopyTable(data.overlays);
+  else
+    region.overlays = {}
+  end
+  if data.overlaysTexture then
+    region.overlaysTexture = CopyTable(data.overlaysTexture)
+  else
+    region.overlaysTexture = {}
   end
 
   -- Update texture settings
@@ -1121,16 +1183,16 @@ local function modify(parent, region, data)
   region:UpdateEffectiveOrientation()
 
   -- Update tooltip availability
-  local tooltipType = WeakAuras.CanHaveTooltip(data);
+  local tooltipType = Private.CanHaveTooltip(data);
   if tooltipType and data.useTooltip then
     -- Create and enable tooltip-hover frame
     if not region.tooltipFrame then
       region.tooltipFrame = CreateFrame("frame", nil, region);
       region.tooltipFrame:SetAllPoints(icon);
       region.tooltipFrame:SetScript("OnEnter", function()
-        WeakAuras.ShowMouseoverTooltip(region, region.tooltipFrame);
+        Private.ShowMouseoverTooltip(region, region.tooltipFrame);
       end);
-      region.tooltipFrame:SetScript("OnLeave", WeakAuras.HideTooltip);
+      region.tooltipFrame:SetScript("OnLeave", Private.HideTooltip);
     end
 
     region.tooltipFrame:EnableMouse(true);
@@ -1188,15 +1250,33 @@ local function modify(parent, region, data)
     local state = region.state
     region:UpdateMinMax()
     if state.progressType == "timed" then
-      local expirationTime = state.expirationTime and state.expirationTime > 0 and state.expirationTime or math.huge;
+      local expirationTime
+      if state.paused == true then
+        if not region.paused then
+          region:Pause()
+        end
+        if region.TimerTick then
+          region.TimerTick = nil
+          region:UpdateRegionHasTimerTick()
+        end
+        expirationTime = GetTime() + (state.remaining or 0)
+      else
+        if region.paused then
+          region:Resume()
+        end
+        if not region.TimerTick then
+          region.TimerTick = TimerTick
+          region:UpdateRegionHasTimerTick()
+        end
+        expirationTime = state.expirationTime and state.expirationTime > 0 and state.expirationTime or math.huge;
+      end
       local duration = state.duration or 0
 
       region:SetTime(region.currentMax - region.currentMin, expirationTime - region.currentMin, state.inverse);
-      if not region.TimerTick then
-        region.TimerTick = TimerTick
-        region:UpdateRegionHasTimerTick()
-      end
     elseif state.progressType == "static" then
+      if region.paused then
+        region:Resume()
+      end
       local value = state.value or 0;
       local total = state.total or 0;
 
@@ -1206,6 +1286,9 @@ local function modify(parent, region, data)
         region:UpdateRegionHasTimerTick()
       end
     else
+      if region.paused then
+        region:Resume()
+      end
       region:SetTime(0, math.huge)
       if region.TimerTick then
         region.TimerTick = nil
@@ -1213,19 +1296,11 @@ local function modify(parent, region, data)
       end
     end
 
-    local path = state.icon or "Interface\\Icons\\INV_Misc_QuestionMark"
-    local iconPath = (
-      region.useAuto
-      and path ~= ""
-      and path
-      or data.displayIcon
-      or "Interface\\Icons\\INV_Misc_QuestionMark"
-      );
-    self.icon:SetTexture(iconPath);
+    region:UpdateIcon()
 
     local duration = state.duration or 0
     local effectiveInverse = (state.inverse and not region.inverseDirection) or (not state.inverse and region.inverseDirection);
-    region.bar:SetAdditionalBars(state.additionalProgress, region.overlays, region.currentMin, region.currentMax, effectiveInverse, region.overlayclip);
+    region.bar:SetAdditionalBars(state.additionalProgress, region.overlays, region.overlaysTexture, region.currentMin, region.currentMax, effectiveInverse, region.overlayclip);
   end
 
   -- Scale update function
@@ -1282,42 +1357,18 @@ local function modify(parent, region, data)
   WeakAuras.regionPrototype.modifyFinish(parent, region, data);
 end
 
-local function ValidateRegion(data)
-  data.subRegions = data.subRegions or {}
-  for index, subRegionData in ipairs(data.subRegions) do
-    if subRegionData.type == "aurabar_bar" then
-      return
+local function validate(data)
+  -- pre-migration
+  if data.subRegions then
+    for _, subRegionData in ipairs(data.subRegions) do
+      if subRegionData.type == "aurabar_bar" then
+        subRegionData.type = "subforeground"
+      end
     end
   end
-  tinsert(data.subRegions, 1, {
-    ["type"] = "aurabar_bar"
-  })
+  Private.EnforceSubregionExists(data, "subforeground")
+  Private.EnforceSubregionExists(data, "subbackground")
 end
 
 -- Register new region type with WeakAuras
-WeakAuras.RegisterRegionType("aurabar", create, modify, default, GetProperties, ValidateRegion);
-
-local function subSupports(regionType)
-  return regionType == "aurabar"
-end
-
-local function noop()
-end
-
-local function SetFrameLevel(self, level)
-  self.parent.bar:SetFrameLevel(level)
-  self.parent.iconFrame:SetFrameLevel(level)
-end
-
-local function subCreate()
-  local result = {}
-  result.Update = noop
-  result.SetFrameLevel = SetFrameLevel
-  return result
-end
-
-local function subModify(parent, region)
-  region.parent = parent
-end
-
-WeakAuras.RegisterSubRegionType("aurabar_bar", L["Foreground"], subSupports, subCreate, subModify, noop, noop, {}, nil, {}, false);
+WeakAuras.RegisterRegionType("aurabar", create, modify, default, GetProperties, validate);

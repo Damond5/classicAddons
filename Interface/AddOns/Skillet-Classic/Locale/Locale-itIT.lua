@@ -127,6 +127,8 @@ L["Ignored Materials Clear"] = "Ignored Materials Clear"
 L["Ignored Materials List"] = "Ignored Materials List"
 L["IGNORELISTDESC"] = "Open the Ignored Materials list frame."
 L["Illusions"] = "Illusions"
+--[[Translation missing --]]
+L["in your bank"] = "in your bank"
 L["in your inventory"] = "in your inventory"
 L["Include alts"] = "Includi alt"
 L["Include bank"] = "Include bank"
@@ -187,6 +189,10 @@ L["Queue is not empty. Overwrite?"] = "La coda non e' vuota. Sovrascrivere?"
 L["Queue with this name already exsists. Overwrite?"] = "Una coda con questo nome esiste gia'. Sovrascrivere?"
 L["QUEUECRAFTABLEREAGENTSDESC"] = "Se puoi creare il reagente per la ricetta corrente, e non ne hai a sufficenza, allora il reagente verra' aggiunto alla coda"
 L["QUEUECRAFTABLEREAGENTSNAME"] = "Accoda reagenti creabili"
+--[[Translation missing --]]
+L["QUEUECRAFTSDESC"] = "Allow enchants to be queued which adds needed reagents to the shopping list. Enchants cannot be processed from the queue and will be removed."
+--[[Translation missing --]]
+L["QUEUECRAFTSNAME"] = "Queue enchant reagents"
 L["QUEUEGLYPHREAGENTSDESC"] = "Se puoi creare il reagente per la ricetta corrente, e non ne hai a sufficenza, allora il reagente verra' aggiunto alla coda. Questa opzione e' separata solo per i Glifi."
 L["QUEUEGLYPHREAGENTSNAME"] = "Accoda reagenti per Glifi"
 L["QUEUEONLYVIEWDESC"] = "Show Standalone Queue Window only when set, show both Standalone Queue Window and Skillet Window when clear."
@@ -279,6 +285,8 @@ L["Total spent"] = "Totale speso"
 L["TRADEBUTTONSDESC"] = "Include TradeSkill buttons in frame"
 --[[Translation missing --]]
 L["TRADEBUTTONSNAME"] = "Include TradeSkill buttons"
+--[[Translation missing --]]
+L["TradeSkillMaster must be in 'WOW UI' mode to use Skillet-Classic"] = ""
 L["Trained"] = "Allenato"
 L["TRANSPARAENCYDESC"] = "Trasparenza della finestra principale"
 L["Transparency"] = "Trasparenza"
