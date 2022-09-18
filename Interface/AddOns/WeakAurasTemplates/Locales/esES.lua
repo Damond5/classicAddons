@@ -1,4 +1,4 @@
-if not WeakAuras.IsCorrectVersion() then return end
+if not WeakAuras.IsLibsOK() then return end
 
 if GetLocale() ~= "esES" then
   return
@@ -84,9 +84,9 @@ local L = WeakAuras.L
 	L["Cooldown Tracking"] = "Cooldown Tracking"
 	--[[Translation missing --]]
 	L["Create Auras"] = "Create Auras"
+	L["debuff"] = "perjuicio"
 	--[[Translation missing --]]
 	L["Debuff"] = "Debuff"
-	L["debuff"] = "perjuicio"
 	L["Debuffs"] = "Perjuicios"
 	--[[Translation missing --]]
 	L["Empowered Buff"] = "Empowered Buff"

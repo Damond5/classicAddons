@@ -1,4 +1,4 @@
-local E, _, V, P, G = unpack(ElvUI) --Import: Engine, Locales, PrivateDB, ProfileDB, GlobalDB
+local E, _, V, P, G = unpack(ElvUI)
 local C, L = unpack(E.OptionsUI)
 local CH = E:GetModule('Chat')
 local LO = E:GetModule('Layout')
@@ -53,7 +53,7 @@ General.args.historyGroup = ACH:Group(L["History"], nil, 65)
 General.args.historyGroup.args.chatHistory = ACH:Toggle(L["Enable"], L["Log the main chat frames history. So when you reloadui or log in and out you see the history from your last session."], 1)
 General.args.historyGroup.args.resetHistory = ACH:Execute(L["Reset History"], nil, 2, function() CH:ResetHistory() end)
 General.args.historyGroup.args.historySize = ACH:Range(L["History Size"], nil, 3, { min = 10, max = 500, step = 1 }, nil, nil, nil, function() return not E.db.chat.chatHistory end)
-General.args.historyGroup.args.showHistory = ACH:MultiSelect(L["Display Types"], nil, 4, { WHISPER = L["Whisper"], GUILD = L["Guild"], OFFICER = L["Officer"], PARTY = L["Party"], RAID = L["Raid"], INSTANCE = L["Instance"], CHANNEL = L["Channel"], SAY = L["Say"], YELL = L["Yell"], EMOTE = L["Emote"] }, nil, nil, function(info, key) return E.db.chat[info[#info]][key] end, function(info, key, value) E.db.chat[info[#info]][key] = value end, function() return not E.db.chat.chatHistory end)
+General.args.historyGroup.args.showHistory = ACH:MultiSelect(L["Display Types"], nil, 4, { WHISPER = L["Whisper"], GUILD = L["Guild"], PARTY = L["Party"], RAID = L["Raid"], INSTANCE = L["Instance"], CHANNEL = L["Channel"], SAY = L["Say"], YELL = L["Yell"], EMOTE = L["Emote"] }, nil, nil, function(info, key) return E.db.chat[info[#info]][key] end, function(info, key, value) E.db.chat[info[#info]][key] = value end, function() return not E.db.chat.chatHistory end)
 
 General.args.combatRepeat = ACH:Group(L["Combat Repeat"], nil, 70)
 General.args.combatRepeat.args.enableCombatRepeat = ACH:Toggle(L["Enable"], nil, 1)
@@ -96,7 +96,7 @@ General.args.voicechatGroup.args.voicePanelAlpha = ACH:Range(L["Alpha"], L["Chan
 
 General.args.timestampGroup = ACH:Group(L["TIMESTAMPS_LABEL"], nil, 95)
 General.args.timestampGroup.args.timeStampLocalTime = ACH:Toggle(L["Local Time"], L["If not set to true then the server time will be displayed instead."], 1)
-General.args.timestampGroup.args.timeStampFormat = ACH:Select(L["TIMESTAMPS_LABEL"], L["OPTION_TOOLTIP_TIMESTAMPS"], 2, { ['NONE'] = L["None"], ['%I:%M '] = '03:27', ['%I:%M:%S '] = '03:27:32', ['%I:%M %p '] = '03:27 PM', ['%I:%M:%S %p '] = '03:27:32 PM', ['%H:%M '] = '15:27', ['%H:%M:%S '] =	'15:27:32' })
+General.args.timestampGroup.args.timeStampFormat = ACH:Select(L["TIMESTAMPS_LABEL"], L["OPTION_TOOLTIP_TIMESTAMPS"], 2, { ['NONE'] = L["None"], ['%I:%M '] = '03:27', ['%I:%M:%S '] = '03:27:32', ['%I:%M %p '] = '03:27 PM', ['%I:%M:%S %p '] = '03:27:32 PM', ['%H:%M '] = '15:27', ['%H:%M:%S '] = '15:27:32' })
 General.args.timestampGroup.args.useCustomTimeColor = ACH:Toggle(L["Custom Timestamp Color"], nil, 3, nil, nil, nil, nil, nil, nil, function() return E.db.chat.timeStampFormat == 'NONE' end)
 General.args.timestampGroup.args.customTimeColor = ACH:Color('', nil, 4, nil, nil, function(info) local t, d = E.db.chat[info[#info]], P.chat[info[#info]] return t.r, t.g, t.b, t.a, d.r, d.g, d.b end, function(info, r, g, b) local t = E.db.chat[info[#info]] t.r, t.g, t.b = r, g, b end, nil, function() return (E.db.chat.timeStampFormat == 'NONE' or not E.db.chat.useCustomTimeColor) end)
 

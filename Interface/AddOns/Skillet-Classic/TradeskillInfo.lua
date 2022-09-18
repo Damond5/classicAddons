@@ -161,11 +161,18 @@ end
 -- or craft.
 --
 function Skillet:GetTradeSkillItemLink(index)
+	--DA.DEBUG(2,"GetTradeSkillItemLink("..tostring(index)..") currentTrade= "..tostring(self.currentTrade))
 	local recipe, recipeID = self:GetRecipeDataByTradeIndex(self.currentTrade, index)
 	local _, link
 	if recipe then
 		if self.isCraft then
 			link = GetCraftItemLink(index)
+		elseif self.currentTrade == 7411 and recipe.itemID == 0 then
+			if Skillet.db.profile.enchant_scrolls and recipe.scrollID then
+				_, link = GetItemInfo(recipe.scrollID)
+			else
+				link = GetTradeSkillRecipeLink(index)
+			end
 		else
 			_, link = GetItemInfo(recipe.itemID)
 		end
@@ -216,11 +223,12 @@ end
 -- item, the index'th reagent required for the item is returned
 --
 function Skillet:GetTradeSkillReagentItemLink(skillIndex, index)
+	--DA.DEBUG(2,"GetTradeSkillReagentItemLink("..tostring(skillIndex)..", "..tostring(index)..") currentTrade= "..tostring(self.currentTrade))
 	if skillIndex and index then
 		local recipe = self:GetRecipeDataByTradeIndex(self.currentTrade, skillIndex)
 		if recipe and recipe.reagentData[index] then
 			local _, link = GetItemInfo(recipe.reagentData[index].id)
-			return link;
+			return link
 		end
 	end
 		return nil

@@ -1,10 +1,10 @@
 # WIM
 
-## [3.9.5](https://github.com/Legacy-of-Sylvanaar/wow-instant-messenger/tree/3.9.5) (2022-01-18)
-[Full Changelog](https://github.com/Legacy-of-Sylvanaar/wow-instant-messenger/compare/3.9.4...3.9.5) [Previous Releases](https://github.com/Legacy-of-Sylvanaar/wow-instant-messenger/releases)
+## [3.9.6-5-g9a39dc0](https://github.com/Legacy-of-Sylvanaar/wow-instant-messenger/tree/9a39dc096b0abc424b537fce601550b60748beea) (2022-08-16)
+[Full Changelog](https://github.com/Legacy-of-Sylvanaar/wow-instant-messenger/compare/3.9.6...9a39dc096b0abc424b537fce601550b60748beea) [Previous Releases](https://github.com/Legacy-of-Sylvanaar/wow-instant-messenger/releases)
 
-- bump tbc toc  
-- Merge pull request #2 from luckybgit/patch-1  
-    Update deDE.lua  
-- Update deDE.lua  
-    It wasnt authentic in german. Sounded weird and you couldnt tell what it does. now you do  
+- add wrath  
+- modernize packaging some  
+- Might as well do that other toc too  
+- TOC bumps  
+- toc bump  

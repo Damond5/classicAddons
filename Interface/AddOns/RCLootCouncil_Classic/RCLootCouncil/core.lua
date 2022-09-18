@@ -901,6 +901,7 @@ function RCLootCouncil:OnLootTableReceived (lt)
 
 	-- Hand the lootTable to the votingFrame
 	if self.isCouncil or self.mldb.observe then
+		self:CallModule("votingframe") -- Might not be activated 
 		self:GetActiveModule("votingframe"):ReceiveLootTable(lootTable)
 	end
 

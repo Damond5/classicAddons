@@ -83,6 +83,7 @@ PLATER_DEFAULT_SETTINGS = {
 	
 		--> save some cvars values so it can restore when a new character login using Plater
 		saved_cvars = {},
+		saved_cvars_last_change = {},
 		keybinds = {},
 		
 		--store npcs found in raids and dungeons
@@ -770,6 +771,7 @@ PLATER_DEFAULT_SETTINGS = {
 		aura_custom = {},
 		
 		aura_timer = true,
+		aura_timer_decimals = false,
 		aura_timer_text_size = 15,
 		aura_timer_text_font = "Arial Narrow",
 		aura_timer_text_anchor = {side = 9, x = 0, y = 0},
@@ -788,6 +790,10 @@ PLATER_DEFAULT_SETTINGS = {
 		
 		extra_icon_anchor = {side = 6, x = -4, y = 0},
 		extra_icon_show_timer = true,
+		extra_icon_timer_decimals = false,
+		extra_icon_show_swipe = true,
+		extra_icon_cooldown_reverse = true,
+		extra_icon_cooldown_edge_texture = "Interface\\Cooldown\\edge",
 		extra_icon_timer_font = "Arial Narrow",
 		extra_icon_timer_size = 12,
 		extra_icon_timer_outline = "NONE",
@@ -829,6 +835,7 @@ PLATER_DEFAULT_SETTINGS = {
 		
 		aura_show_important = true,
 		aura_show_dispellable = true,
+		aura_show_only_short_dispellable_on_players = false,
 		aura_show_enrage = false,
 		aura_show_magic = false,
 		aura_show_aura_by_the_player = true,
@@ -1030,6 +1037,12 @@ PLATER_DEFAULT_SETTINGS = {
 					[3] = {},
 				},
 				["MONK"] = {
+					[0] = {},
+					[1] = {},
+					[2] = {},
+					[3] = {},
+				},
+				["EVOKER"] = {
 					[0] = {},
 					[1] = {},
 					[2] = {},
@@ -2628,6 +2641,7 @@ PLATER_DEFAULT_SETTINGS = {
 		cast_statusbar_bgtexture = "PlaterBackground 2",
 		cast_statusbar_bgcolor = {0.113725, 0.113725, 0.113725, 0.891240},
 		cast_statusbar_color = {1, .7, 0, 0.96},
+		cast_statusbar_color_channeling = {0, 1, 0, 0.96},
 		cast_statusbar_color_nointerrupt = {.5, .5, .5, 0.96},
 		cast_statusbar_color_interrupted = {1, .1, .1, 1},
 		cast_statusbar_color_finished = {0, 1, 0, 1},
@@ -2654,6 +2668,7 @@ PLATER_DEFAULT_SETTINGS = {
 		indicator_friendlyclass = false,
 		indicator_anchor = {side = 2, x = -2, y = 0},
 		indicator_scale = 1,
+		indicator_shield = false,
 		
 		indicator_extra_raidmark = true,
 		indicator_raidmark_scale = 1,

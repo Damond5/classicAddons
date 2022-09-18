@@ -1,4 +1,4 @@
-local E, _, V, P, G = unpack(ElvUI) --Import: Engine, Locales, PrivateDB, ProfileDB, GlobalDB
+local E, _, V, P, G = unpack(ElvUI)
 local C, L = unpack(E.OptionsUI)
 local TT = E:GetModule('Tooltip')
 local Skins = E:GetModule('Skins')
@@ -24,7 +24,7 @@ General.playerTitles = ACH:Toggle(L["Player Titles"], L["Display player titles."
 General.guildRanks = ACH:Toggle(L["Guild Ranks"], L["Display guild ranks if a unit is guilded."], 3)
 General.alwaysShowRealm = ACH:Toggle(L["Always Show Realm"], nil, 4)
 General.role = ACH:Toggle(L["ROLE"], L["Display the unit role in the tooltip."], 5, nil, nil, nil, nil, nil, nil, not E.Retail)
-General.showMount = ACH:Toggle(L["Current Mount"], L["Display current mount the unit is riding."], 6)
+General.showMount = ACH:Toggle(L["Current Mount"], L["Display current mount the unit is riding."], 6, nil, nil, nil, nil, nil, nil, not E.Retail)
 General.gender = ACH:Toggle(L["Gender"], L["Displays the gender of players."], 7)
 General.showElvUIUsers = ACH:Toggle(L["Show ElvUI Users"], L["Show ElvUI users and their version of ElvUI."], 8)
 General.itemQuality = ACH:Toggle(L["Item Quality"], L["Color tooltip border based on Item Quality."], 9)
@@ -59,12 +59,20 @@ for i = 1, 8 do
 end
 
 General.fontGroup = ACH:Group(L["Font"], nil, 70, nil, function(info) return E.db.tooltip[info[#info]] end, function(info, value) E.db.tooltip[info[#info]] = value; TT:SetTooltipFonts() end)
-General.fontGroup.args.font = ACH:SharedMediaFont(L["Font"], nil, 1)
-General.fontGroup.args.fontOutline = ACH:Select(L["Font Outline"], nil, 2, C.Values.FontFlags)
-General.fontGroup.args.spacer = ACH:Spacer(3)
-General.fontGroup.args.headerFontSize = ACH:Range(L["Header Font Size"], nil, 4, C.Values.FontSize)
-General.fontGroup.args.textFontSize = ACH:Range(L["Text Font Size"], nil, 5, C.Values.FontSize)
-General.fontGroup.args.smallTextFontSize = ACH:Range(L["Comparison Font Size"], L["This setting controls the size of text in item comparison tooltips."], 6, C.Values.FontSize)
+General.fontGroup.args.smallTextFontSize = ACH:Range(L["Comparison Font Size"], L["This setting controls the size of text in item comparison tooltips."], 1, C.Values.FontSize)
+General.fontGroup.args.spacer = ACH:Spacer(2)
+
+General.fontGroup.args.header = ACH:Group(L["Tooltip Header"], nil, 3)
+General.fontGroup.args.header.args.headerFont = ACH:SharedMediaFont(L["Font"], nil, 1)
+General.fontGroup.args.header.args.headerFontOutline = ACH:Select(L["Font Outline"], nil, 2, C.Values.FontFlags)
+General.fontGroup.args.header.args.headerFontSize = ACH:Range(L["Font Size"], nil, 3, C.Values.FontSize)
+General.fontGroup.args.header.inline = true
+
+General.fontGroup.args.body = ACH:Group(L["Tooltip Body"], nil, 4)
+General.fontGroup.args.body.args.font = ACH:SharedMediaFont(L["Font"], nil, 1)
+General.fontGroup.args.body.args.fontOutline = ACH:Select(L["Font Outline"], nil, 2, C.Values.FontFlags)
+General.fontGroup.args.body.args.textFontSize = ACH:Range(L["Font Size"], nil, 3, C.Values.FontSize)
+General.fontGroup.args.body.inline = true
 
 General.healthBar = ACH:Group(L["Health Bar"], nil, 80, nil, function(info) return E.db.tooltip.healthBar[info[#info]] end, function(info, value) E.db.tooltip.healthBar[info[#info]] = value; end)
 General.healthBar.args.statusPosition = ACH:Select(L["Position"], nil, 1, { BOTTOM = L["Bottom"], TOP = L["Top"], DISABLED = L["Disabled"] })

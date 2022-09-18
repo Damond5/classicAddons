@@ -378,7 +378,7 @@ local ButtonMetaFunctions = _G[DF.GlobalWidgetControlNames ["button"]]
 		if (normal) then
 			self.button:SetNormalTexture (normal)
 		elseif (_type (normal) ~= "boolean") then
-			self.button:SetNormalTexture (nil)
+			self.button:SetNormalTexture ("")
 		end
 		
 		if (_type (highlight) == "boolean") then
@@ -386,7 +386,7 @@ local ButtonMetaFunctions = _G[DF.GlobalWidgetControlNames ["button"]]
 				self.button:SetHighlightTexture (normal, "ADD")
 			end
 		elseif (highlight == nil) then
-			self.button:SetHighlightTexture (nil)
+			self.button:SetHighlightTexture ("")
 		else
 			self.button:SetHighlightTexture (highlight, "ADD")
 		end
@@ -396,7 +396,7 @@ local ButtonMetaFunctions = _G[DF.GlobalWidgetControlNames ["button"]]
 				self.button:SetPushedTexture (normal)
 			end
 		elseif (pressed == nil) then
-			self.button:SetPushedTexture (nil)
+			self.button:SetPushedTexture ("")
 		else
 			self.button:SetPushedTexture (pressed, "ADD")
 		end
@@ -406,7 +406,7 @@ local ButtonMetaFunctions = _G[DF.GlobalWidgetControlNames ["button"]]
 				self.button:SetDisabledTexture (normal)
 			end
 		elseif (disabled == nil) then
-			self.button:SetDisabledTexture (nil)
+			self.button:SetDisabledTexture ("")
 		else
 			self.button:SetDisabledTexture (disabled, "ADD")
 		end
@@ -544,10 +544,10 @@ local ButtonMetaFunctions = _G[DF.GlobalWidgetControlNames ["button"]]
 --> custom textures
 	function ButtonMetaFunctions:InstallCustomTexture (texture, rect, coords, use_split, side_textures, side_textures2)
 	
-		self.button:SetNormalTexture (nil)
-		self.button:SetPushedTexture (nil)
-		self.button:SetDisabledTexture (nil)
-		self.button:SetHighlightTexture (nil)
+		self.button:SetNormalTexture ("")
+		self.button:SetPushedTexture ("")
+		self.button:SetDisabledTexture ("")
+		self.button:SetHighlightTexture ("")
 
 		local button = self.button
 		
@@ -1098,12 +1098,13 @@ function DF:NewButton (parent, container, name, member, w, h, func, param1, para
 	ButtonObject.text_overlay = _G [name .. "_Text"]
 	ButtonObject.disabled_overlay = _G [name .. "_TextureDisabled"]
 	
+	texture = texture or ""
 	ButtonObject.button:SetNormalTexture (texture)
 	ButtonObject.button:SetPushedTexture (texture)
 	ButtonObject.button:SetDisabledTexture (texture)
 	ButtonObject.button:SetHighlightTexture (texture, "ADD")
 	
-	ButtonObject.button.text:SetText (text)
+	ButtonObject.button.text:SetText (text or "")
 	ButtonObject.button.text:SetPoint ("center", ButtonObject.button, "center")
 
 	local text_width = ButtonObject.button.text:GetStringWidth()
@@ -1200,8 +1201,8 @@ end
 local color_button_height = 16
 local color_button_width = 16
 
-local set_colorpick_color = function (button, r, g, b, a)
-	a = a or 1
+local setColorPickColor = function (button, r, g, b, a)
+	r, g, b, a = DF:ParseColors(r, g, b, a)
 	button.color_texture:SetVertexColor (r, g, b, a)
 end
 
@@ -1209,41 +1210,43 @@ local colorpick_cancel = function (self)
 	ColorPickerFrame:Hide()
 end
 
+local getColorPickColor = function(self)
+	return self.color_texture:GetVertexColor()
+end
+
 function DF:CreateColorPickButton (parent, name, member, callback, alpha, button_template)
 	return DF:NewColorPickButton (parent, name, member, callback, alpha, button_template)
 end
 
 function DF:NewColorPickButton (parent, name, member, callback, alpha, button_template)
-
 	--button
 	local button = DF:NewButton (parent, _, name, member, color_button_width, color_button_height, pickcolor, alpha, "param2", nil, nil, nil, button_template)
 	button.color_callback = callback
 	button.Cancel = colorpick_cancel
-	button.SetColor = set_colorpick_color
-	
+	button.SetColor = setColorPickColor
+	button.GetColor = getColorPickColor
+
 	button.HookList.OnColorChanged = {}
-	
+
 	if (not button_template) then
 		button:InstallCustomTexture()
 		button:SetBackdrop ({edgeFile = [[Interface\Tooltips\UI-Tooltip-Border]], edgeSize = 6,
 		bgFile = [[Interface\DialogFrame\UI-DialogBox-Background]], insets = {left = 0, right = 0, top = 0, bottom = 0}})
 	end
-	
-	--textura do fundo
-	local background = DF:NewImage (button, nil, color_button_width, color_button_height, nil, nil, nil, "$parentBck")
-	--background:SetTexture ([[Interface\AddOns\Details\images\icons]])
-	background:SetPoint ("topleft", button.widget, "topleft", 1, -2)
-	background:SetPoint ("bottomright", button.widget, "bottomright", -1, 1)
-	background:SetTexCoord (0.337890625, 0.390625, 0.625, 0.658203125)
-	background:SetDrawLayer ("background", 1)
-	
+
+	local background = button:CreateTexture(nil, "background", nil, 2)
+	background:SetPoint("topleft", button.widget, "topleft", 0, 0)
+	background:SetPoint("bottomright", button.widget, "bottomright", 0, 0)
+	background:SetTexture([[Interface\ITEMSOCKETINGFRAME\UI-EMPTYSOCKET]])
+	background:SetTexCoord(3/16, 13/16, 3/16, 13/16)
+	background:SetAlpha(0.3)
+
 	--textura da cor
 	local img = DF:NewImage (button, nil, color_button_width, color_button_height, nil, nil, "color_texture", "$parentTex")
 	img:SetColorTexture (1, 1, 1)
-	img:SetPoint ("topleft", button.widget, "topleft", 1, -2)
-	img:SetPoint ("bottomright", button.widget, "bottomright", -1, 1)
-	img:SetDrawLayer ("background", 2)
-	
+	img:SetPoint ("topleft", button.widget, "topleft", 0, 0)
+	img:SetPoint ("bottomright", button.widget, "bottomright", 0, 0)
+	img:SetDrawLayer ("background", 3)
+
 	return button
-	
 end

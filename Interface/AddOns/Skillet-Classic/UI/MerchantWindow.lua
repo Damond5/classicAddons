@@ -17,14 +17,18 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]--
 
+--
 -- Localization
+--
 local L = LibStub("AceLocale-3.0"):GetLocale("Skillet")
 local PT = LibStub("LibPeriodicTable-3.1")
 
 local merchant_inventory = {}
 
+--
 -- Get the name for the item in the specified merchant slot. Can
 -- only be called when the merchant window is open
+--
 local function get_merchant_item_name(slot)
 	local link = GetMerchantItemLink(slot);
 	if link then
@@ -35,8 +39,10 @@ local function get_merchant_item_name(slot)
 	end
 end
 
+--
 -- Checks to see if the cached list of items for this merchant
 -- included anything we need to buy.
+--
 local function does_merchant_sell_required_items(list)
 	for i=1,#list,1 do
 		local id  = list[i].id
@@ -47,8 +53,10 @@ local function does_merchant_sell_required_items(list)
 	return false
 end
 
+--
 -- Scans everything the merchant has and adds it to a table
 -- that we can refer to when looking for items to buy.
+--
 local function update_merchant_inventory()
 	if MerchantFrame and MerchantFrame:IsVisible() then
 		local count = GetMerchantNumItems()
@@ -61,15 +69,19 @@ local function update_merchant_inventory()
 				if extendedCost then
 					itemCount = GetMerchantItemCostInfo(i)
 					if itemCount > 0 then
-						--DA.DEBUG(2,"itemCount for "..tostring(name).." ("..tostring(id)..")= "..tostring(itemCount))
-						itemTexture, itemValue, itemLink, currencyName = GetMerchantItemCostItem(i, 1)
-						if itemLink then
-							currencyName = GetItemInfo(itemLink)
-							currencyID = Skillet:GetItemIDFromLink(itemLink)
-						else
-							currencyID = -1 * tonumber(Skillet.currencyIDsByName[currencyName] or 0)
+						DA.DEBUG(2,"itemCount for "..tostring(name).." ("..tostring(id)..")= "..tostring(itemCount))
+						for j=1, itemCount, 1 do
+							itemTexture, itemValue, itemLink, currencyName = GetMerchantItemCostItem(i, j)
+							DA.DEBUG(2,"itemTexture= "..tostring(itemTexture)..", itemValue= "..tostring(itemValue)..", currencyName= "..tostring(currencyName))
+							if currencyName then
+								currencyID = -1 * tonumber(Skillet.currencyIDsByName[currencyName] or 0)
+							elseif itemLink then
+								currencyName = GetItemInfo(itemLink)
+								currencyID = Skillet:GetItemIDFromLink(itemLink)
+							end
+							DA.DEBUG(2,"Currency for "..tostring(name).." ("..tostring(id)..")= "..tostring(currencyName).." ("..tostring(currencyID)..") x "..tostring(itemValue))
+							Skillet:AddCurrencyData(currencyName,currencyID)
 						end
-						--DA.DEBUG(2,"Currency for "..tostring(name).." ("..tostring(id)..")= "..tostring(currencyName).." x "..tostring(itemValue))
 					end
 				end
 				if numAvailable == -1  then
@@ -123,7 +135,7 @@ end
 --
 local function update_merchant_buy_button()
 	Skillet:InventoryScan()
-	local list = Skillet:GetShoppingList(Skillet.currentPlayer, false)
+	local list = Skillet:GetShoppingList(Skillet.currentPlayer, Skillet.db.profile.same_faction, false)
 	if not list or #list == 0 then
 		--DA.DEBUG(0,"ShoppingList is empty")
 		SkilletMerchantBuyFrame:Hide()
@@ -150,7 +162,9 @@ local function update_merchant_buy_button()
 	return true
 end
 
+--
 -- Removes the merchant buy button
+--
 local function remove_merchant_buy_button()
 	SkilletMerchantBuyFrame:Hide()
 end
@@ -163,9 +177,11 @@ function Skillet:UpdateMerchantFrame()
 	Skillet:MERCHANT_SHOW()
 end
 
+--
 -- Merchant window opened. This method can be called multiple
 -- times if needed, and it can be called even if a merchant window
 -- is not open.
+--
 function Skillet:MERCHANT_SHOW()
 	if MerchantFrame and not MerchantFrame:IsVisible() then
 		-- called when the merchant frame is not visible, this is a no-op
@@ -212,7 +228,7 @@ end
 --
 function Skillet:BuyRequiredReagents()
 	--DA.DEBUG(0,"BuyRequiredReagents()")
-	local list = Skillet:GetShoppingList(Skillet.currentPlayer, false)
+	local list = Skillet:GetShoppingList(Skillet.currentPlayer, Skillet.db.profile.same_faction, false)
 	if #list == 0 then
 		return
 	elseif does_merchant_sell_required_items(list) == false then
@@ -321,7 +337,7 @@ function Skillet:MerchantBuyButton_OnEnter(button)
 	GameTooltip:SetOwner(button, "ANCHOR_BOTTOMRIGHT")
 	GameTooltip:ClearLines()
 	GameTooltip:AddLine(L["Buy Reagents"])
-	local needList = Skillet:GetShoppingList(Skillet.currentPlayer, false)
+	local needList = Skillet:GetShoppingList(Skillet.currentPlayer, Skillet.db.profile.same_faction, false)
 	local totalCost = 0
 	for i=1,#needList,1 do
 		local itemID = needList[i].id

@@ -647,7 +647,7 @@
 	# Template for all buttons used to display the reagents needed
 	#
 	-->
-	<Frame name="SkilletItemTemplate" hidden="false" virtual="true">
+	<Frame name="SkilletReagentTemplate" hidden="false" virtual="true">
 		<Size>
 			<AbsDimension x="190" y="20"/>
 		</Size>
@@ -738,7 +738,7 @@
 				elseif ( IsShiftKeyDown() ) then
 				<!-- This will put a link to the *item* that can be created with this trade skill
 					 into the current chat edit box -->
-					ChatEdit_InsertLink(link)
+					Skillet:ReagentButtonShiftClick(self, Skillet.selectedSkill, self:GetID())
 				else
 				<!-- generic click action -->
 					Skillet:ReagentButtonOnClick(self, Skillet.selectedSkill, self:GetID())
@@ -779,7 +779,7 @@
 	# Tool tip to be used when hovering over recipe lines in the skill list
 	#
 	-->
-	<GameTooltip name="SkilletTradeskillTooltip" frameStrata="TOOLTIP" hidden="true">
+	<GameTooltip name="SkilletTradeskillTooltip" frameStrata="TOOLTIP" hidden="true" parent="UIParent" inherits="GameTooltipTemplate">
 		<Backdrop bgFile="Interface\Tooltips\UI-Tooltip-Background" edgeFile="Interface\Tooltips\UI-Tooltip-Border" tile="true">
 			<EdgeSize>
 				<AbsValue val="16"/>
@@ -1161,6 +1161,7 @@
 						Skillet:InventoryFilterButtons_Hide()
 						SkilletSearchBox:SetText("")
 						SkilletSearchBox:ClearFocus()
+						Skillet.data.tooltipCache = {}
 					</OnClick>
 				</Scripts>
 			</Button>
@@ -1350,8 +1351,8 @@
 					<OnEnter>
 						GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT")
 						GameTooltip:SetText(CRAFT_IS_MAKEABLE_TOOLTIP, nil, nil, nil, nil, true)
-						GameTooltip:AddLine("Left-Click to toggle", .7, .7, .7)
-						GameTooltip:AddLine("Right-Click for filtering options", .7, .7, .7)
+						GameTooltip:AddLine(Skillet.L["Left-Click to toggle"], .7, .7, .7)
+						GameTooltip:AddLine(Skillet.L["Right-Click for filtering options"], .7, .7, .7)
 						GameTooltip:Show()
 					</OnEnter>
 					<OnLeave>
@@ -1731,7 +1732,7 @@
 				<Anchors>
 					<Anchor point="TOPRIGHT" relativeTo="SkilletFrame" relativePoint="TOPRIGHT">
 						<Offset>
-							<AbsDimension x="-10" y="-110"/>
+							<AbsDimension x="-10" y="-130"/>
 						</Offset>
 					</Anchor>
 				</Anchors>
@@ -1981,6 +1982,9 @@
 				</Frames>
 				<Scripts>
 					<OnLoad>
+						if not self.SetBackdrop then
+							Mixin(self, BackdropTemplateMixin)
+						end
 						self:SetBackdropBorderColor(TOOLTIP_DEFAULT_COLOR.r, TOOLTIP_DEFAULT_COLOR.g, TOOLTIP_DEFAULT_COLOR.b)
 						self:SetBackdropColor(0.0, 0.0, 0.0, 0.9)
 					</OnLoad>
@@ -2011,7 +2015,7 @@
 			</Button>
 			<Button name="SkilletQueueManagementButton" inherits="UIPanelButtonTemplate" parent="SkilletFrame">
 				<Size>
-					<AbsDimension x="110" y="20"/>
+					<AbsDimension x="95" y="20"/>
 				</Size>
 				<Anchors>
 					<Anchor point="RIGHT" relativeTo="SkilletRecipeNotesButton" relativePoint="LEFT">
@@ -2026,9 +2030,9 @@
 					</OnClick>
 				</Scripts>
 			</Button>
-			<Button name="SkilletIgnoredMatsButton" inherits="UIPanelButtonTemplate" parent="SkilletFrame">
+			<Button name="SkilletIgnoreListButton" inherits="UIPanelButtonTemplate" parent="SkilletFrame">
 				<Size>
-					<AbsDimension x="100" y="20"/>
+					<AbsDimension x="115" y="20"/>
 				</Size>
 				<Anchors>
 					<Anchor point="RIGHT" relativeTo="SkilletQueueManagementButton" relativePoint="LEFT">
@@ -2107,7 +2111,7 @@
 					<OnClick>
 						Skillet:InventoryFilterButtons_Hide()
 						local link = Skillet:GetTradeSkillItemLink(Skillet.selectedSkill)
-						if ( IsControlKeyDown() ) then
+						if ( IsControlKeyDown() and not IsAltKeyDown() ) then
 							<!-- This opens up the dressing room window and display the character
 								 wearing the item (if that is possible) -->
 							DressUpItemLink(link)
@@ -2118,7 +2122,7 @@
 						elseif ( IsAltKeyDown() ) then
 						<!-- This will put a link to the *reagents* required by this *item*
 							 into the current chat edit box -->
-							Skillet:ReagentsLinkOnClick(self, Skillet.selectedSkill, self:GetID())
+							Skillet:ReagentsLinkOnClick(self, Skillet.selectedSkill, IsControlKeyDown())
 						end
 					</OnClick>
 					<OnEnter>
@@ -2148,7 +2152,7 @@
 			# And of course, buttons for the reagents ...
 			#
 			-->
-			<Button name="SkilletReagent1" inherits="SkilletItemTemplate" id="1" parent="SkilletReagentParent">
+			<Button name="SkilletReagent1" inherits="SkilletReagentTemplate" id="1" parent="SkilletReagentParent">
 				<Anchors>
 					<Anchor point="TOPLEFT" relativeTo="SkilletReagentLabel" relativePoint="BOTTOMLEFT">
 						<Offset>
@@ -2157,7 +2161,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name="SkilletReagent2" inherits="SkilletItemTemplate" id="2" parent="SkilletReagentParent">
+			<Button name="SkilletReagent2" inherits="SkilletReagentTemplate" id="2" parent="SkilletReagentParent">
 				<Anchors>
 					<Anchor point="TOPLEFT" relativeTo="SkilletReagent1" relativePoint="BOTTOMLEFT">
 						<Offset>
@@ -2166,7 +2170,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name="SkilletReagent3" inherits="SkilletItemTemplate" id="3" parent="SkilletReagentParent">
+			<Button name="SkilletReagent3" inherits="SkilletReagentTemplate" id="3" parent="SkilletReagentParent">
 				<Anchors>
 					<Anchor point="TOPLEFT" relativeTo="SkilletReagent2" relativePoint="BOTTOMLEFT">
 						<Offset>
@@ -2175,7 +2179,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name="SkilletReagent4" inherits="SkilletItemTemplate" id="4" parent="SkilletReagentParent">
+			<Button name="SkilletReagent4" inherits="SkilletReagentTemplate" id="4" parent="SkilletReagentParent">
 				<Anchors>
 					<Anchor point="TOPLEFT" relativeTo="SkilletReagent3" relativePoint="BOTTOMLEFT">
 						<Offset>
@@ -2184,7 +2188,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name="SkilletReagent5" inherits="SkilletItemTemplate" id="5" parent="SkilletReagentParent">
+			<Button name="SkilletReagent5" inherits="SkilletReagentTemplate" id="5" parent="SkilletReagentParent">
 				<Anchors>
 					<Anchor point="TOPLEFT" relativeTo="SkilletReagent4" relativePoint="BOTTOMLEFT">
 						<Offset>
@@ -2193,7 +2197,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name="SkilletReagent6" inherits="SkilletItemTemplate" id="6" parent="SkilletReagentParent">
+			<Button name="SkilletReagent6" inherits="SkilletReagentTemplate" id="6" parent="SkilletReagentParent">
 				<Anchors>
 					<Anchor point="TOPLEFT" relativeTo="SkilletReagent5" relativePoint="BOTTOMLEFT">
 						<Offset>
@@ -2202,7 +2206,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name="SkilletReagent7" inherits="SkilletItemTemplate" id="7" parent="SkilletReagentParent">
+			<Button name="SkilletReagent7" inherits="SkilletReagentTemplate" id="7" parent="SkilletReagentParent">
 				<Anchors>
 					<Anchor point="TOPLEFT" relativeTo="SkilletReagent6" relativePoint="BOTTOMLEFT">
 						<Offset>
@@ -2211,7 +2215,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name="SkilletReagent8" inherits="SkilletItemTemplate" id="8" parent="SkilletReagentParent">
+			<Button name="SkilletReagent8" inherits="SkilletReagentTemplate" id="8" parent="SkilletReagentParent">
 				<Anchors>
 					<Anchor point="TOPLEFT" relativeTo="SkilletReagent7" relativePoint="BOTTOMLEFT">
 						<Offset>
@@ -2656,6 +2660,31 @@
 						Skillet:InventoryFilterButtons_Hide()
 						Skillet:StartQueue_OnClick(self,button)
 					</OnClick>
+				</Scripts>
+			</Button>
+			<!--
+			#
+			# A (secure) button that pauses the queue
+			#
+			-->
+			<Button name="SkilletPauseQueueButton" inherits="UIPanelButtonTemplate,SecureActionButtonTemplate" text="Pause" parent="SkilletQueueParentBase">
+				<Size>
+					<AbsDimension x="90" y="22"/>
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="SkilletQueueParent" relativePoint="BOTTOMLEFT">
+						<Offset>
+							<AbsDimension x="0" y="-1"/>
+						</Offset>
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnLoad>
+						self:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+					</OnLoad>
+					<PreClick>
+						Skillet:PauseQueue_PreClick(self,button)
+					</PreClick>
 				</Scripts>
 			</Button>
 			<!--

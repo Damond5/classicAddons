@@ -1,4 +1,4 @@
-if not WeakAuras.IsCorrectVersion() then return end
+if not WeakAuras.IsLibsOK() then return end
 
 if GetLocale() ~= "itIT" then
   return
@@ -74,9 +74,9 @@ local L = WeakAuras.L
 	--[[Translation missing --]]
 	L["Create Auras"] = "Create Auras"
 	--[[Translation missing --]]
-	L["Debuff"] = "Debuff"
-	--[[Translation missing --]]
 	L["debuff"] = "debuff"
+	--[[Translation missing --]]
+	L["Debuff"] = "Debuff"
 	--[[Translation missing --]]
 	L["Debuffs"] = "Debuffs"
 	--[[Translation missing --]]

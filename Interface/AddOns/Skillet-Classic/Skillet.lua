@@ -29,16 +29,23 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Skillet")
 Skillet.L = L
 
 -- Get version info from the .toc file
-Skillet.version = GetAddOnMetadata("Skillet-Classic", "Version");
-Skillet.curseID = GetAddOnMetadata("Skillet-Classic", "X-Curse-Project-ID");
-Skillet.build = (select(4, GetBuildInfo())) < 20000 and "Classic" or "Retail"
+local MAJOR_VERSION = GetAddOnMetadata("Skillet-Classic", "Version");
+local ADDON_BUILD = ((select(4, GetBuildInfo())) < 20000 and "Classic") or ((select(4, GetBuildInfo())) < 30000 and "BCC") or ((select(4, GetBuildInfo())) < 40000 and "Wrath") or "Retail"
+Skillet.version = MAJOR_VERSION
+Skillet.build = ADDON_BUILD
 Skillet.project = WOW_PROJECT_ID
-Skillet.isClassic = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
+local isRetail = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
+local isClassic = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
+local isBCC = WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC
+local isWrath = Skillet.build == "Wrath"
 
 Skillet.isCraft = false			-- true for the Blizzard Craft UI, false for the Blizzard TradeSkill UI
 Skillet.lastCraft = false		-- help events know when to call ConfigureRecipeControls()
 Skillet.ignoreClose = false		-- when switching from the Craft UI to the TradeSkill UI, ignore the other's close.
 Skillet.gttScale = GameTooltip:GetScale()
+
+Skillet.tradeUpdate = 0
+Skillet.craftUpdate = 0
 
 local nonLinkingTrade = { [2656] = true, [53428] = true }				-- smelting, runeforging
 
@@ -55,45 +62,44 @@ local defaults = {
 		display_item_tooltip = true,					-- show item tooltip or recipe tooltip
 		link_craftable_reagents = true,
 		queue_craftable_reagents = true,
+		ignore_banked_reagents = false,
 		queue_glyph_reagents = false,					-- not in Classic
 		display_required_level = false,
 		display_item_level = false,
 		display_shopping_list_at_bank = true,
-		display_shopping_list_at_guildbank = false,		-- not in Classic
 		display_shopping_list_at_auction = true,
 		display_shopping_list_at_merchant = true,
+		display_shopping_list_at_guildbank = false,		-- not in Classic
+		use_guildbank_as_alt = false,					-- not in Classic
+		use_bank_as_alt = false,
 		use_blizzard_for_followers = false,				-- not in Classic
 		hide_blizzard_frame = true,						-- primarily for debugging
 		support_crafting = true,
+		ignore_change = false,							-- not in Classic
 		queue_crafts = false,
 		include_craftbuttons = true,
+		enchant_scrolls = false,
 		include_tradebuttons = true,
 		search_includes_reagents = true,
-		confirm_queue_clear = false,
-		queue_only_view = true,
+		interrupt_clears_queue = false,
+		clamp_to_screen = true,
 		scale_tooltip = false,
 		transparency = 1.0,
 		scale = 1.0,
 		ttscale = 1.0,
 		plugins = {},
 		SavedQueues = {},
+		include_alts = true,	-- Display alt's items in shopping list
+		same_faction = true,	-- Display same faction alt items only
+		item_order =  false,	-- Order shopping list by item
+		merge_items = false,	-- Merge same shopping list items together
+		include_guild = false,	-- Use the contents of the Guild Bank
 	},
 	realm = {
 --
 -- notes added to items crafted or used in crafting
 --
 		notes = {},
-	},
-	char = {
---
--- options specific to a current tradeskill
---
-		tradeskill_options = {},
-		include_alts = true,	-- Display alt's items in shopping list
-		same_faction = true,	-- Display same faction alt items only
-		item_order =  false,	-- Order shopping list by item
-		merge_items = false,	-- Merge same shopping list items together
-		include_guild = false,	-- Use the contents of the Guild Bank
 	},
 }
 
@@ -173,9 +179,82 @@ function Skillet:EnableBlizzardFrame()
 end
 
 --
+-- Called with events that should have an existing profile.
+--
+function Skillet:RefreshConfig(event, database, profile)
+	DA.CHAT("RefreshConfig("..tostring(event)..", "..tostring(profile)..")")
+end
+
+--
+-- Called with events that need the profile created.
+--
+function Skillet:InitializeProfile(event, database, profile)
+	DA.CHAT("InitializeProfile("..tostring(event)..", "..tostring(profile)..")")
+	self:ConfigureProfile()
+	self:ConfigurePlayerProfile()
+end
+
+--
+-- Called from events related to profile manipulation and new characters
+--
+function Skillet:ConfigureProfile()
+	if Skillet.db.profile.WarnLog == nil then
+		Skillet.db.profile.WarnLog = true
+	end
+	Skillet.WarnLog = Skillet.db.profile.WarnLog
+	Skillet.WarnShow = Skillet.db.profile.WarnShow
+	Skillet.DebugShow = Skillet.db.profile.DebugShow
+	Skillet.DebugLogging = Skillet.db.profile.DebugLogging
+	Skillet.DebugLevel = Skillet.db.profile.DebugLevel
+	Skillet.LogLevel = Skillet.db.profile.LogLevel
+	Skillet.MAXDEBUG = Skillet.db.profile.MAXDEBUG or 4000
+	Skillet.MAXPROFILE = Skillet.db.profile.MAXPROFILE or 2000
+	Skillet.TableDump = Skillet.db.profile.TableDump
+	Skillet.TraceShow = Skillet.db.profile.TraceShow
+	Skillet.TraceLog = Skillet.db.profile.TraceLog
+	Skillet.ProfileShow = Skillet.db.profile.ProfileShow
+--
+-- Profile variable to control Skillet fixes for Blizzard bugs.
+-- Can be toggled [or turned off] with "/skillet fixbugs [off]"
+--
+	if Skillet.db.profile.FixBugs == nil then
+		Skillet.db.profile.FixBugs = true
+	end
+	Skillet.FixBugs = Skillet.db.profile.FixBugs
+end
+
+--
+-- Called from events related to profile manipulation and new characters
+--
+function Skillet:ConfigurePlayerProfile()
+	if not self.db.profile.groupDB then
+		self.db.profile.groupDB = {}
+	end
+	if not self.db.profile.groupSN then
+		self.db.profile.groupSN = {}
+	end
+	if not self.db.profile.SavedQueues then
+		self.db.profile.SavedQueues = {}
+	end
+	if not self.db.profile.plugins then
+		self.db.profile.plugins = {}
+	end
+	if self.db.profile.plugins.recipeNamePlugin then
+		if not self.db.profile.plugins.recipeNameSuffix then
+			self.db.profile.plugins.recipeNameSuffix = self.db.profile.plugins.recipeNamePlugin
+		end
+		self.db.profile.plugins.recipeNamePlugin = nil
+	end
+	self:InitializePlugins()
+end
+
+--
 -- Called when the addon is loaded
 --
 function Skillet:OnInitialize()
+	if not SkilletWho then
+		SkilletWho = {}
+	end
 	if not SkilletDBPC then
 		SkilletDBPC = {}
 	end
@@ -192,7 +271,11 @@ function Skillet:OnInitialize()
 	DA.DebugLog = SkilletDBPC
 	DA.DebugProfile = SkilletProfile
 	self.db = AceDB:New("SkilletDB", defaults)
-
+	self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
+	self.db.RegisterCallback(self, "OnProfileCopied", "RefreshConfig")
+	self.db.RegisterCallback(self, "OnProfileReset", "InitializeProfile")
+	self.db.RegisterCallback(self, "OnNewProfile", "InitializeProfile")
+	self.db.RegisterCallback(self, "OnProfileDeleted", "RefreshConfig")
 --
 -- Clean up obsolete data
 --
@@ -200,10 +283,6 @@ function Skillet:OnInitialize()
 		self.db.global.cachedGuildbank = nil
 	end
 
-	if self.curseID ~= "447401" then
-		print("|cff8888ffSkillet|r: Your version of Skillet-Classic may be out of date.\nGo to https://www.curseforge.com/wow/addons/skillet \nand download the latest version.")
-		self.cursePopup = true
-	end
 --
 -- Change the dataVersion when (major) code changes
 -- obsolete the current saved variables database.
@@ -224,7 +303,7 @@ function Skillet:OnInitialize()
 	local dataVersion = 5
 	local queueVersion = 1
 	local customVersion = 1
-	local recipeVersion = 3
+	local recipeVersion = 4
 	local _,wowBuild,_,wowVersion = GetBuildInfo();
 	self.wowBuild = wowBuild
 	self.wowVersion = wowVersion
@@ -233,10 +312,10 @@ function Skillet:OnInitialize()
 		self:FlushAllData()
 	elseif not self.db.global.customVersion or self.db.global.customVersion ~= customVersion then
 		self.db.global.customVersion = customVersion
---		self:FlushCustomData()			-- allow one release before doing anything
+		self:FlushCustomData()
 	elseif not self.db.global.queueVersion or self.db.global.queueVersion ~= queueVersion then
 		self.db.global.queueVersion = queueVersion
---		self:FlushQueueData()			-- allow one release before doing anything
+		self:FlushQueueData()
 	elseif not self.db.global.recipeVersion or self.db.global.recipeVersion ~= recipeVersion then
 		self.db.global.recipeVersion = recipeVersion
 		self:FlushRecipeData()
@@ -247,11 +326,16 @@ function Skillet:OnInitialize()
 	end
 
 --
--- Initialize global data
+-- Information useful for debugging
 --
 	self.db.global.locale = GetLocale()
-	self.db.global.version = self.version	-- save a copy for
-	self.db.global.curseID = self.curseID	-- post-mortem purposes
+	self.db.global.version = self.version
+	self.db.global.build = self.build
+	self.db.global.project = self.project
+
+--
+-- Initialize global data
+--
 	if not self.db.global.recipeDB then
 		self.db.global.recipeDB = {}
 	end
@@ -264,15 +348,15 @@ function Skillet:OnInitialize()
 	if not self.db.global.MissingVendorItems then
 		self:InitializeMissingVendorItems()
 	end
---
--- Classic doesn't have a Guild Bank
--- Currently this only effects ShoppingList.lua
---
---[[
+	if not self.db.global.MissingSkillLevels then
+		self.db.global.MissingSkillLevels = {}
+	end
+	if not self.db.global.SkillLevels then
+		self:InitializeSkillLevels()
+	end
 	if not self.db.global.cachedGuildbank then
 		self.db.global.cachedGuildbank = {}
 	end
-]]--
 
 --
 -- Hook default tooltips
@@ -300,51 +384,30 @@ function Skillet:OnInitialize()
 --
 -- Note:	Undefined is the same as false so we only need to predefine true variables
 --
-	if Skillet.db.profile.WarnLog == nil then
-		Skillet.db.profile.WarnLog = true
-	end
-
-	Skillet.WarnLog = Skillet.db.profile.WarnLog
-	Skillet.WarnShow = Skillet.db.profile.WarnShow
-	Skillet.DebugShow = Skillet.db.profile.DebugShow
-	Skillet.DebugLogging = Skillet.db.profile.DebugLogging
-	Skillet.DebugLevel = Skillet.db.profile.DebugLevel
-	Skillet.LogLevel = Skillet.db.profile.LogLevel
-	Skillet.MAXDEBUG = Skillet.db.profile.MAXDEBUG or 4000
-	Skillet.MAXPROFILE = Skillet.db.profile.MAXPROFILE or 2000
-	Skillet.TableDump = Skillet.db.profile.TableDump
-	Skillet.TraceShow = Skillet.db.profile.TraceShow
-	Skillet.TraceLog = Skillet.db.profile.TraceLog
-	Skillet.ProfileShow = Skillet.db.profile.ProfileShow
---
--- Profile variable to control Skillet fixes for Blizzard bugs.
--- Can be toggled [or turned off] with "/skillet fixbugs [off]"
---
-	if Skillet.db.profile.FixBugs == nil then
-		Skillet.db.profile.FixBugs = true
-	end
-	Skillet.FixBugs = Skillet.db.profile.FixBugs
-
+	Skillet:ConfigureProfile()
 --
 -- Create a static popup for changing professions
 --
-StaticPopupDialogs["SKILLET_OLD_PROJECT"] = {
-	text = "Your version of Skillet-Classic may be out of date.\nGo to https://www.curseforge.com/wow/addons/skillet \nand download the latest version.",
-	button1 = OKAY,
-	OnAccept = function( self )
-		return
-	end,
-	timeout = 30,
-	exclusive = 1,
-	whileDead = 1,
-	hideOnEscape = 1
-};
-
 StaticPopupDialogs["SKILLET_CONTINUE_CHANGE"] = {
 	text = "Skillet-Classic\n"..L["Press Okay to continue changing professions"],
 	button1 = OKAY,
 	OnAccept = function( self )
 		Skillet:ContinueChange()
+		return
+	end,
+	timeout = 0,
+	exclusive = 1,
+	whileDead = 1,
+	hideOnEscape = 1
+};
+
+--
+-- Create a static popup for changing professions
+--
+StaticPopupDialogs["SKILLET_IGNORE_CHANGE"] = {
+	text = "Skillet-Classic\n"..L["Use Action Bar button to change professions"],
+	button1 = OKAY,
+	OnAccept = function( self )
 		return
 	end,
 	timeout = 0,
@@ -368,6 +431,7 @@ end
 -- increment to trigger a call.
 --
 function Skillet:FlushAllData()
+	DA.DEBUG(0,"FlushAllData()");
 	Skillet.data = {}
 	Skillet.db.realm.tradeSkills = {}
 	Skillet.db.realm.auctionData = {}
@@ -388,8 +452,9 @@ end
 -- good cause.
 --
 function Skillet:FlushCustomData()
-	Skillet.db.realm.groupDB = {}
-	Skillet.db.realm.groupSN = {}
+	DA.DEBUG(0,"FlushCustomData()");
+	Skillet.db.profile.groupDB = {}
+	Skillet.db.profile.groupSN = {}
 end
 
 --
@@ -398,6 +463,7 @@ end
 -- queue and should have minimal impact.
 --
 function Skillet:FlushQueueData()
+	DA.DEBUG(0,"FlushQueueData()");
 	Skillet.db.realm.queueData = {}
 	Skillet.db.realm.reagentsInQueue = {}
 end
@@ -409,6 +475,7 @@ end
 -- primary reason this function exists.
 --
 function Skillet:FlushRecipeData()
+	DA.DEBUG(0,"FlushRecipeData()");
 	Skillet.db.global.recipeDB = {}
 	Skillet.db.global.itemRecipeUsedIn = {}
 	Skillet.db.global.itemRecipeSource = {}
@@ -444,12 +511,36 @@ function Skillet:InitializeDatabase(player, clean)
 		return
 	end
 	if player then
-		if not self.db.realm.groupDB then
-			self.db.realm.groupDB = {}
+--
+-- Session data
+--
+		if not self.data then
+			self.data = {}
 		end
-		if not self.db.realm.groupSN then
-			self.db.realm.groupSN = {}
+		if not self.data.recipeList then
+			self.data.recipeList = {}
 		end
+		if not self.data.skillList then
+			self.data.skillList = {}
+		end
+		if not self.data.skillList[player] or clean then
+			self.data.skillList[player] = {}
+		end
+		if not self.data.groupList then
+			self.data.groupList = {}
+		end
+		if not self.data.groupList[player] or clean then
+			self.data.groupList[player] = {}
+		end
+		if not self.data.skillIndexLookup then
+			self.data.skillIndexLookup = {}
+		end
+		if not self.data.skillIndexLookup[player] or clean then
+			self.data.skillIndexLookup[player] = {}
+		end
+--
+-- Realm data
+--
 		if not self.db.realm.skillDB then
 			self.db.realm.skillDB = {}
 		end
@@ -486,29 +577,29 @@ function Skillet:InitializeDatabase(player, clean)
 		if not self.db.realm.auctionData[player] or clean then
 			self.db.realm.auctionData[player] = {}
 		end
-		if not self.data then
-			self.data = {}
+		if not self.db.realm.trade_wait then
+			self.db.realm.trade_wait = 1	-- variable to control how many TRADE_SKILL_UPDATE events to ignore
 		end
-		if not self.data.recipeList then
-			self.data.recipeList = {}
+		if not self.db.realm.craft_wait then
+			self.db.realm.craft_wait = 1	-- variable to control how many CRAFT_UPDATE events to ignore
 		end
-		if not self.data.skillList then
-			self.data.skillList = {}
+		if not self.db.realm.faction then
+			self.db.realm.faction = {}
 		end
-		if not self.data.skillList[player] or clean then
-			self.data.skillList[player] = {}
+		if not self.db.realm.race then
+			self.db.realm.race = {}
 		end
-		if not self.data.groupList then
-			self.data.groupList = {}
+		if not self.db.realm.class then
+			self.db.realm.class = {}
 		end
-		if not self.data.groupList[player] or clean then
-			self.data.groupList[player] = {}
+		if not self.db.realm.guid then
+			self.db.realm.guid = {}
 		end
-		if not self.data.skillIndexLookup then
-			self.data.skillIndexLookup = {}
+		if not self.db.global.faction then
+			self.db.global.faction = {}
 		end
-		if not self.data.skillIndexLookup[player] or clean then
-			self.data.skillIndexLookup[player] = {}
+		if not self.db.global.server then
+			self.db.global.server = {}
 		end
 		if player == UnitName("player") then
 			if not self.db.realm.inventoryData then
@@ -561,20 +652,10 @@ function Skillet:InitializeDatabase(player, clean)
 			if not self.db.realm.userIgnoredMats[player] or clean then
 				self.db.realm.userIgnoredMats[player] = {}
 			end
-			if not self.db.profile.SavedQueues then
-				self.db.profile.SavedQueues = {}
-			end
-			if not self.db.profile.plugins then
-				self.db.profile.plugins = {}
-			end
-			if self.db.profile.plugins.recipeNamePlugin then
-				if not self.db.profile.plugins.recipeNameSuffix then
-					self.db.profile.plugins.recipeNameSuffix = self.db.profile.plugins.recipeNamePlugin
-				end
-				self.db.profile.plugins.recipeNamePlugin = nil
-			end
-			self:InitializePlugins()
-			self:ScanPlayerTradeSkills(player)
+--
+-- Profile data
+--
+			Skillet:ConfigurePlayerProfile()
 		end
 	end
 end
@@ -623,11 +704,13 @@ function Skillet:OnEnable()
 	self:RegisterEvent("BANKFRAME_OPENED")
 	self:RegisterEvent("PLAYERBANKSLOTS_CHANGED")
 	self:RegisterEvent("BANKFRAME_CLOSED")
---[[
-	self:RegisterEvent("GUILDBANKFRAME_OPENED")
-	self:RegisterEvent("GUILDBANKBAGSLOTS_CHANGED")
-	self:RegisterEvent("GUILDBANKFRAME_CLOSED")
-]]--
+
+	if isBCC then
+		self:RegisterEvent("GUILDBANKFRAME_OPENED")
+		self:RegisterEvent("GUILDBANKBAGSLOTS_CHANGED")
+		self:RegisterEvent("GUILDBANKFRAME_CLOSED")
+	end
+
 	self:RegisterEvent("AUCTION_HOUSE_SHOW")
 	self:RegisterEvent("AUCTION_HOUSE_CLOSED")
 --
@@ -656,6 +739,12 @@ function Skillet:OnEnable()
 --
 	self:RegisterEvent("PLAYER_LOGOUT")
 
+	self:RegisterEvent("PLAYER_LOGIN")
+	self:RegisterEvent("PLAYER_ENTERING_WORLD")
+	self:RegisterEvent("NEW_RECIPE_LEARNED") -- arg1 = recipeID
+	self:RegisterEvent("SKILL_LINES_CHANGED") -- replacement for CHAT_MSG_SKILL?
+	self:RegisterEvent("LEARNED_SPELL_IN_TAB") -- arg1 = professionID
+
 --	self:RegisterEvent("ADDON_ACTION_BLOCKED")
 
 	self.bagsChanged = true
@@ -666,14 +755,76 @@ function Skillet:OnEnable()
 	self.currentPlayer = UnitName("player")
 	self.currentGroupLabel = "Blizzard"
 	self.currentGroup = nil
---
--- run the upgrade code to convert any old settings
---
-	self:UpgradeDataAndOptions()
+	self.skippedQueue = {}
+	self:UpgradeDataAndOptions()		-- run the upgrade code to convert any old settings
+	self:ConvertIgnoreListData()
 	self:CollectTradeSkillData()
+	self:CollectCurrencyData()
+	self:ScanPlayerTradeSkills()
 	self:CreateAdditionalButtonsList()
 	self:EnablePlugins()
 	self:DisableBlizzardFrame()
+end
+
+function Skillet:PLAYER_LOGIN()
+	DA.TRACE("PLAYER_LOGIN")
+	Skillet.loginTime = GetTime()
+end
+
+function Skillet:PLAYER_ENTERING_WORLD()
+	DA.TRACE("PLAYER_ENTERING_WORLD")
+	local player = UnitName("player")
+	local realm = GetRealmName()
+	local faction = UnitFactionGroup("player")
+	local raceName, raceFile, raceID = UnitRace("player")
+	local className, classFile, classId = UnitClass("player")
+	local locale = GetLocale()
+	local _,wowBuild,_,wowVersion = GetBuildInfo();
+	local guid = UnitGUID("player")		-- example: guid="Player-970-0002FD64" kind=="Player" server=="970" ID="0002FD64" 
+--
+-- PLAYER_ENTERING_WORLD happens on login and when changing zones so
+-- only save the time of the first one.
+--
+	if not Skillet.loginTime then
+		Skillet.loginTime = GetTime()
+	end
+--
+-- Store some identifying data in the per character saved variables file
+--
+	SkilletWho.player = player
+	SkilletWho.realm = realm
+	SkilletWho.faction = faction
+	SkilletWho.raceFile = raceFile
+	SkilletWho.classFile = classFile
+	self.db.realm.faction[player] = faction
+	self.db.realm.race[player] = raceFile
+	self.db.realm.class[player] = classFile
+	SkilletWho.locale = locale
+	SkilletWho.wowBuild = wowBuild
+	SkilletWho.wowVersion = wowVersion
+	SkilletWho.guid = guid
+	if guid then
+		local kind, server, ID = strsplit("-", guid)
+		DA.DEBUG(1,"player="..tostring(player)..", faction="..tostring(faction)..", guid="..tostring(guid)..", server="..tostring(server))
+--
+-- If we support data sharing across connected realms, then
+-- Skillet.db.realm.* data needs to move to 
+-- Skillet.db.global.* data indexed by server.
+--
+		self.db.realm.guid[player]= guid
+		if (server) then
+			self.data.server = server
+			self.data.realm = realm
+			if not self.db.global.server[server] then
+				self.db.global.server[server] = {}
+			end
+			self.db.global.server[server][realm] = player
+			if not self.db.global.faction[server] then
+				self.db.global.faction[server] = {}
+			end
+			self.db.global.faction[server][player] = faction
+		end
+	end
 end
 
 function Skillet:ADDON_ACTION_BLOCKED()
@@ -703,38 +854,74 @@ function Skillet:PLAYER_LOGOUT()
 		end
 		SkilletMemory = DA.deepcopy(self.data.groupList) -- minus all the group "Blizzard" stuff
 	end
+	for tradeID in pairs(self.db.realm.tradeSkills[self.currentPlayer]) do
+		--DA.DEBUG(0,"tradeID= "..tostring(tradeID)..", count= "..tostring(self.db.realm.tradeSkills[self.currentPlayer][tradeID].count))
+		self.db.realm.tradeSkills[self.currentPlayer][tradeID].count = 0
+	end
+end
+
+function Skillet:LEARNED_SPELL_IN_TAB(event, profession)
+	DA.TRACE("LEARNED_SPELL_IN_TAB")
+	DA.TRACE("profession= "..tostring(profession))
+	if Skillet.tradeSkillOpen then
+		Skillet.dataSourceChanged = true	-- Process the change on the next TRADE_SKILL_UPDATE
+	end
+end
+
+function Skillet:NEW_RECIPE_LEARNED(event, recipeID)
+	DA.TRACE("NEW_RECIPE_LEARNED")
+	DA.TRACE("recipeID= "..tostring(recipeID))
+	if Skillet.tradeSkillOpen then
+		Skillet.dataSourceChanged = true	-- Process the change on the next TRADE_SKILL_UPDATE
+	end
 end
 
 function Skillet:TRADE_SKILL_NAME_UPDATE()
 	DA.TRACE("TRADE_SKILL_NAME_UPDATE")
+	DA.TRACE("TRADE_SKILL_NAME_UPDATE: tradeShow= "..tostring(Skillet.tradeShow)..", linkedSkill= "..tostring(Skillet.linkedSkill))
 	if not Skillet.tradeShow then return end
 	if Skillet.linkedSkill then
-		if Skillet.lastCraft ~= Skillet.isCraft then
-			Skillet:ConfigureRecipeControls()
-		end
+		Skillet:ConfigureRecipeControls()
 		Skillet:SkilletShow()
 	end
 end
 
 function Skillet:TRADE_SKILL_UPDATE()
 	DA.TRACE("TRADE_SKILL_UPDATE")
+	Skillet.tradeUpdate = Skillet.tradeUpdate + 1
+	DA.TRACE("TRADE_SKILL_UPDATE: closingTrade= "..tostring(Skillet.closingTrade)..", tradeShow= "..tostring(Skillet.tradeShow)..", tradeUpdate= "..tostring(Skillet.tradeUpdate))
 	if Skillet.closingTrade or not Skillet.tradeShow then return end
+	if Skillet.tradeUpdate < Skillet.db.realm.trade_wait then return end
 	if Skillet.tradeSkillFrame and Skillet.tradeSkillFrame:IsVisible() then
-		if Skillet.lastCraft ~= Skillet.isCraft then
-			Skillet:ConfigureRecipeControls()
-		end
-		Skillet:AdjustInventory()
+		Skillet:ConfigureRecipeControls()
+	end
+	DA.TRACE("TRADE_SKILL_UPDATE: dataSourceChanged= "..tostring(Skillet.dataSourceChanged)..", dataScanned= "..tostring(Skillet.dataScanned))
+	if Skillet.dataSourceChanged or not Skillet.dataScanned then
+		Skillet.dataSourceChanged = false
+		Skillet:SkilletShowWindow()
 	end
 end
 
 function Skillet:CRAFT_UPDATE()
 	DA.TRACE("CRAFT_UPDATE")
+	Skillet.craftUpdate = Skillet.craftUpdate + 1
+	DA.TRACE("CRAFT_UPDATE: closingTrade= "..tostring(Skillet.closingTrade)..", tradeShow= "..tostring(Skillet.tradeShow)..", craftUpdate= "..tostring(Skillet.craftUpdate))
 	if Skillet.closingTrade or not Skillet.craftShow then return end
+	if Skillet.craftUpdate < Skillet.db.realm.craft_wait then return end
 	if Skillet.tradeSkillFrame and Skillet.tradeSkillFrame:IsVisible() then
-		if Skillet.lastCraft ~= Skillet.isCraft then
-			Skillet:ConfigureRecipeControls()
-		end
-		Skillet:AdjustInventory()
+		Skillet:ConfigureRecipeControls()
+	end
+	DA.TRACE("CRAFT_UPDATE: dataSourceChanged= "..tostring(Skillet.dataSourceChanged)..", dataScanned= "..tostring(Skillet.dataScanned))
+	if Skillet.dataSourceChanged or not Skillet.dataScanned then
+		Skillet.dataSourceChanged = false
+		Skillet:SkilletShowWindow()
+	end
+end
+
+function Skillet:SKILL_LINES_CHANGED()
+	DA.TRACE("SKILL_LINES_CHANGED")
+	if Skillet.tradeSkillOpen then
+		Skillet.dataSourceChanged = true	-- Process the change on the next TRADE_SKILL_UPDATE
 	end
 end
 
@@ -764,7 +951,8 @@ end
 
 function Skillet:TRADE_SKILL_SHOW()
 	DA.TRACE("TRADE_SKILL_SHOW")
-	--DA.TRACE("TRADE_SKILL_SHOW: hideTradeSkillFrame= "..tostring(Skillet.hideTradeSkillFrame))
+	Skillet.tradeUpdate = 0
+	DA.TRACE("TRADE_SKILL_SHOW: hideTradeSkillFrame= "..tostring(Skillet.hideTradeSkillFrame))
 	if Skillet.hideTradeSkillFrame then
 		HideUIPanel(TradeSkillFrame)
 		Skillet.hideTradeSkillFrame = nil
@@ -772,13 +960,10 @@ function Skillet:TRADE_SKILL_SHOW()
 	Skillet.tradeShow = true
 	Skillet.isCraft = false
 	local name = GetTradeSkillLine()
-	--DA.TRACE("TRADE_SKILL_SHOW: name= '"..tostring(name).."'")
-	--DA.TRACE("TRADE_SKILL_SHOW: lastCraft= "..tostring(Skillet.lastCraft))
-	if Skillet.lastCraft ~= Skillet.isCraft then
-		Skillet:ConfigureRecipeControls()
-	end
-	SkilletEnchantButton:Hide()				-- Hide our button
-	--DA.TRACE("TRADE_SKILL_SHOW: changingTrade= "..tostring(Skillet.changingTrade))
+	DA.TRACE("TRADE_SKILL_SHOW: name= '"..tostring(name).."'")
+	DA.TRACE("TRADE_SKILL_SHOW: lastCraft= "..tostring(Skillet.lastCraft))
+	Skillet:ConfigureRecipeControls()
+--	SkilletEnchantButton:Hide()				-- Hide our button
 	if not Skillet.changingTrade then		-- wait for UNIT_SPELLCAST_SUCCEEDED
 		Skillet:SkilletShow()
 	end
@@ -810,9 +995,10 @@ function Skillet:CRAFT_SHOW()
 	Skillet.craftShow = true
 	Skillet.isCraft = true
 	Skillet.hideCraftFrame = true
+	Skillet.craftUpdate = 0
 	local name = GetCraftDisplaySkillLine()
-	--DA.TRACE("CRAFT_SHOW: name= '"..tostring(name).."'")
-	--DA.TRACE("CRAFT_SHOW: lastCraft= "..tostring(Skillet.lastCraft))
+	DA.TRACE("CRAFT_SHOW: name= '"..tostring(name).."'")
+	DA.TRACE("CRAFT_SHOW: lastCraft= "..tostring(Skillet.lastCraft))
 	if Skillet.lastCraft ~= Skillet.isCraft then
 		Skillet:ConfigureRecipeControls()
 	end
@@ -822,7 +1008,7 @@ function Skillet:CRAFT_SHOW()
 		SkilletEnchantButton:Disable()		-- because DoCraft is restricted
 		SkilletEnchantButton:Show()
 	end
-	--DA.TRACE("CRAFT_SHOW: changingTrade= "..tostring(Skillet.changingTrade))
+	DA.TRACE("CRAFT_SHOW: changingTrade= "..tostring(Skillet.changingTrade))
 	if not Skillet.changingTrade then		-- wait for UNIT_SPELLCAST_SUCCEEDED
 		Skillet:SkilletShow()
 	end
@@ -850,42 +1036,79 @@ function Skillet:OnDisable()
 end
 
 function Skillet:IsTradeSkillLinked()
---[[
---
--- Not implemented in Classic
---
-	local isGuild = IsTradeSkillGuild()
-	local isLinked, linkedPlayer = IsTradeSkillLinked()
-	DA.DEBUG(0,"IsTradeSkillLinked, isGuild="..tostring(isGuild)..", isLinked="..tostring(isLinked)..", linkedPlayer="..tostring(linkedPlayer))
+	local isLinked = false
+	local linkedPlayer
+	local isGuild = false
+	if IsTradeSkillLinked then
+		isLinked, linkedPlayer = IsTradeSkillLinked()
+	end
+	if IsTradeSkillGuild then 
+		isGuild = IsTradeSkillGuild()
+	end
+	DA.DEBUG(0,"IsTradeSkillLinked, isLinked="..tostring(isLinked)..", linkedPlayer="..tostring(linkedPlayer)..", isGuild="..tostring(isGuild))
 	if isLinked or isGuild then
 		if not linkedPlayer then
 			if isGuild then
 				linkedPlayer = "Guild Recipes" -- This can be removed when InitializeDatabase gets smarter.
 			end
 		end
-		return true, linkedPlayer, isGuild
+		return isLinked, linkedPlayer, isGuild
 	end
-]]--
 	return false, nil, false
 end
 
 --
--- Show the tradeskill window, called from TRADE_SKILL_SHOW event, clicking on links, or clicking on guild professions
+-- Allow modifier keys that change initial frame behavior to be disabled.
+-- Modifier keys within the Skillet frame are not effected.
+-- Type "/skillet nomodkeys" to toggle.
+--
+-- Make modifier key to open Blizzard frame optional.
+--
+function Skillet:IsModKey1Down()
+	if not Skillet.db.profile.nomodkeys and IsShiftKeyDown() then
+		return true
+	end
+	return false
+end
+
+--
+-- Make modifier key to alter some behaviors optional.
+--
+function Skillet:IsModKey2Down()
+	if not Skillet.db.profile.nomodkeys and IsControlKeyDown() then
+		return true
+	end
+	return false
+end
+
+--
+-- Checks to see if the current trade is one that we support.
+-- Control key says we do (even if we don't, debugging)
+-- Shift key says we don't support it (even if we do)
+--
+function Skillet:IsSupportedTradeskill(tradeID)
+	--DA.DEBUG(0,"IsSupportedTradeskill("..tostring(tradeID)..")")
+	if self:IsModKey2Down() then
+		return true
+	end
+	if self:IsModKey1Down() then
+		return false
+	end
+--
+-- No support for Beast Training or Runeforging
+--
+	if not tradeID or tradeID == 5419 or tradeID == 53428 or UnitAffectingCombat("player") then
+		return false
+	end
+	return true
+end
+
+--
+-- Show the tradeskill window, called from TRADE_SKILL_SHOW or CRAFT_SHOW event or when changing trades.
 --
 function Skillet:SkilletShow()
 	DA.DEBUG(0,"SkilletShow(), currentTrade= "..tostring(self.currentTrade))
 	self.linkedSkill, self.currentPlayer, self.isGuild = Skillet:IsTradeSkillLinked()
---
--- Test for old CurseForge ID and warn user.
---
-	if self.curseID ~= "447401" then
-		if self.cursePopup then
-			StaticPopup_Show("SKILLET_OLD_PROJECT", self.curseID)
-			self.cursePopup = false
-		end
-		print("|cff8888ffSkillet|r: Your version of Skillet-Classic may be out of date.\nGo to https://www.curseforge.com/wow/addons/skillet \nand download the latest version.")
-	end
---
 	if self.linkedSkill then
 		if not self.currentPlayer then
 			DA.DEBUG(0,"Waiting for TRADE_SKILL_NAME_UPDATE")
@@ -902,15 +1125,14 @@ function Skillet:SkilletShow()
 	end
 	DA.DEBUG(0,"name= '"..tostring(name).."', rank= "..tostring(rank)..", maxRank= "..tostring(maxRank))
 	if name then self.currentTrade = self.tradeSkillIDsByName[name] end
-	if self:IsSupportedTradeskill(self.currentTrade) then
-		self:InventoryScan()
-		--DA.DEBUG(0,"SkilletShow: "..self.currentTrade..", name= '"..tostring(name).."', rank= "..tostring(rank)..", maxRank= "..tostring(maxRank))
+	if self:IsSupportedTradeskill(self.currentTrade) and not self.linkedSkill then
+		DA.DEBUG(0,"SkilletShow: "..self.currentTrade..", name= '"..tostring(name).."', rank= "..tostring(rank)..", maxRank= "..tostring(maxRank))
 		self.selectedSkill = nil
 		self.dataScanned = false
-		self:ScheduleTimer("SkilletShowWindow", 0.5)
+		self.tradeSkillOpen = true
 		if self.isCraft then
 			if Skillet.db.profile.hide_blizzard_frame then
-				--DA.DEBUG(0,"HideUIPanel(CraftFrame)")
+				DA.DEBUG(0,"HideUIPanel(CraftFrame)")
 				Skillet.hideCraftFrame = true
 				HideUIPanel(CraftFrame)
 				if Skillet.tradeShow then
@@ -918,12 +1140,23 @@ function Skillet:SkilletShow()
 				end
 			end
 		elseif Skillet.db.profile.hide_blizzard_frame then
-			--DA.DEBUG(0,"HideUIPanel(TradeSkillFrame)")
+			DA.DEBUG(0,"HideUIPanel(TradeSkillFrame)")
 			Skillet.hideTradeSkillFrame = true
 			HideUIPanel(TradeSkillFrame)
 			if Skillet.craftShow then
 				self:RestoreEnchantButton()
 				CloseCraft()
+			end
+		end
+--
+-- Processing will continue in SkilletShowWindow when the TRADE_SKILL_UPDATE or CRAFT_UPDATE event fires
+-- (Wrath needs a little help)
+--
+		if self.build == "Wrath" then
+			if self.isCraft then
+				Skillet:CRAFT_UPDATE()
+			else
+				Skillet:TRADE_SKILL_UPDATE()
 			end
 		end
 	else
@@ -933,7 +1166,7 @@ function Skillet:SkilletShow()
 --
 		if self.castSpellID == 5149 then
 			return
-		elseif not IsShiftKeyDown() and not UnitAffectingCombat("player") then
+		elseif not self:IsModKey1Down() and not UnitAffectingCombat("player") and not self.linkedSkill then
 			DA.DEBUG(0,"SkilletShow: "..tostring(self.currentTrade).." ("..tostring(name)..") is not supported")
 			DA.DEBUG(0,"tradeSkillIDsByName= "..DA.DUMP(self.tradeSkillIDsByName))
 		end
@@ -948,11 +1181,11 @@ function Skillet:SkilletShow()
 end
 
 --
--- Only called from SkilletShow() after a short delay
+-- Called from various events that indicate there may be new data
 --
 function Skillet:SkilletShowWindow()
 	DA.DEBUG(0,"SkilletShowWindow(), currentTrade= "..tostring(self.currentTrade)..", scanInProgress= "..tostring(scanInProgress))
-	if IsControlKeyDown() then
+	if self:IsModKey2Down() then
 		self.db.realm.skillDB[self.currentPlayer][self.currentTrade] = {}
 	end
 	if not self:RescanTrade() then
@@ -966,7 +1199,11 @@ function Skillet:SkilletShowWindow()
 				self.db.profile.ZYGOR = true
 			end
 		else
-			DA.CHAT(L["No headers, try again"])
+--
+-- Changed from DA.CHAT because this state can happen before enough
+-- TRADE_SKILL_UPDATE or CRAFT_UPDATE events have occurred.
+--
+			DA.WARN(L["No headers, try again"])
 		end
 		return
 	end
@@ -994,6 +1231,7 @@ end
 
 function Skillet:SkilletClose()
 	DA.DEBUG(0,"SkilletClose()")
+	self.tradeSkillOpen = false
 	self.lastCraft = self.isCraft
 	if self.isCraft then
 		self:RestoreEnchantButton(false)
@@ -1012,6 +1250,9 @@ end
 
 function Skillet:UNIT_INVENTORY_CHANGED(event, unit)
 	DA.TRACE("UNIT_INVENTORY_CHANGED( "..tostring(unit).." )")
+	if self.tradeSkillOpen then
+		self:AdjustInventory()
+	end
 end
 
 --
@@ -1165,7 +1406,17 @@ function Skillet:ChangeTradeSkill(tradeID, tradeName)
 		local spellID = tradeID
 		if tradeID == 2575 then spellID = 2656 end		-- Ye old Mining vs. Smelting issue
 		local spell = self:GetTradeName(spellID)
-		--DA.DEBUG(1,"tradeID= "..tostring(tradeID)..", tradeName= "..tostring(tradeName)..", Mining= "..tostring(Mining)..", Smelting= "..tostring(Smelting))
+		DA.DEBUG(1,"tradeID= "..tostring(tradeID)..", tradeName= "..tostring(tradeName)..", Mining= "..tostring(Mining)..", Smelting= "..tostring(Smelting))
+		if Skillet.db.profile.ignore_change or isClassic then
+			if not self.db.realm.tradeSkills[self.currentPlayer][tradeID].count or self.db.realm.tradeSkills[self.currentPlayer][tradeID].count < 1 then
+				DA.DEBUG(1,"ChangeTradeSkill: executing ChangeTrade("..tostring(tradeID).."), count= "..tostring(self.db.realm.tradeSkills[self.currentPlayer][tradeID].count)..", tradeName= "..tostring(tradeName))
+				self.db.realm.tradeSkills[self.currentPlayer][tradeID].count = 1
+				self.closingTrade = true
+				self:SkilletClose()
+				StaticPopup_Show("SKILLET_IGNORE_CHANGE")
+				return
+			end
+		end
 		DA.DEBUG(1,"ChangeTradeSkill: executing CastSpellByName("..tostring(spell)..")")
 		self.processingSpell = spell
 		CastSpellByName(spell) -- trigger the whole rescan process via a TRADE_SKILL_SHOW or CRAFT_SHOW event
@@ -1177,6 +1428,21 @@ function Skillet:ChangeTradeSkill(tradeID, tradeName)
 		DA.DEBUG(1,"ChangeTradeSkill: waiting for callback")
 		self.delayNeeded = true
 	end
+end
+
+function Skillet:ChangeTrade(tradeID)
+	DA.DEBUG(0,"ChangeTrade("..tostring(tradeID)..")")
+	self.closingTrade = true
+	if self.isCraft then
+		CloseCraft()
+	else
+		CloseTradeSkill()
+	end
+	self:HideAllWindows()
+	self.changingTrade = tradeID
+	self.changingName = self.tradeSkillNamesByID[tradeID]
+	DA.DEBUG(0,"ChangeTrade: changingTrade= "..tostring(self.changingTrade)..", changingName= "..tostring(self.changingName)..", isCraft= "..tostring(self.isCraft))
+	StaticPopup_Show("SKILLET_CONTINUE_CHANGE")
 end
 
 --
@@ -1248,6 +1514,7 @@ function Skillet:HideTradeSkillWindow()
 	local closed -- was anything closed by us?
 	local frame = self.tradeSkillFrame
 	if frame and frame:IsVisible() then
+		self:DisablePauseButton()
 		self:StopCast()
 		frame:Hide()
 		closed = true
@@ -1261,7 +1528,9 @@ end
 function Skillet:HideAllWindows()
 	--DA.DEBUG(0,"HideAllWindows()")
 	local closed -- was anything closed?
-	-- Cancel anything currently being created
+--
+-- Cancel anything currently being created
+--
 	if self:HideTradeSkillWindow() then
 		closed = true
 	end
@@ -1276,15 +1545,8 @@ function Skillet:HideAllWindows()
 	end
 	self.currentTrade = nil
 	self.selectedSkill = nil
+	self.queueCasting = nil
 	return closed
-end
-
---
--- Show the options window
---
-function Skillet:ShowOptions()
-	InterfaceOptionsFrame_Show()
-	InterfaceOptionsFrame_OpenToCategory("Skillet")
 end
 
 --
@@ -1385,7 +1647,7 @@ end
 --
 function Skillet:AddItemNotesToTooltip(tooltip, altID)
 	--DA.DEBUG(0,"AddItemNotesToTooltip()")
-	if IsControlKeyDown() then
+	if self:IsModKey2Down() then
 		return
 	end
 	local notes_enabled = self.db.profile.show_item_notes_tooltip or false

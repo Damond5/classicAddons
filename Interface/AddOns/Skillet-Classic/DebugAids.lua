@@ -66,7 +66,7 @@ function DA.CHAT(text)
 end
 
 function DA.WARN(...)
-	if not DA.WarnLog then return "" end
+	if not DA.WarnLog and not DA.DebugLogging then return "" end
 	local text = ""
 	local comma = ""
 	for i = 1, select("#", ...), 1 do
@@ -98,7 +98,7 @@ function DA.WARN(...)
 			text = text..comma.."(unknown)"
 		end
 	end
-	if (DA.WarnShow) then
+	if (DA.WarnShow or DA.DebugShow) then
 		print(DA.WARN_COLOR..addonName..": "..text)
 	end
 	table.insert(DA.DebugLog,date().."(W): "..text)

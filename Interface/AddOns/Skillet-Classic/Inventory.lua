@@ -107,6 +107,17 @@ function Skillet:InventorySkillIterations(tradeID, skillIndex)
 						reagentAvailableAlts = reagentAvailableAlts + altBoth
 					end
 				end
+				if self.db.profile.use_guildbank_as_alt then
+					local guildName = GetGuildInfo("player")
+					local cachedGuildbank = self.db.global.cachedGuildbank
+					if guildName and cachedGuildbank[guildName] and cachedGuildbank[guildName][reagentID] then
+						reagentAvailableAlts = reagentAvailableAlts + cachedGuildbank[guildName][reagentID]
+					end
+				end
+				if self.db.profile.use_bank_as_alt then
+					--DA.DEBUG(1,"InventorySkillIterations: reagentID= "..tostring(reagentID)..", reagentAvailable= "..tostring(reagentAvailable)..", GetItemCount(,true)= "..tostring(GetItemCount(reagentID,true)))
+					reagentAvailableAlts = reagentAvailableAlts + GetItemCount(reagentID,true) - reagentAvailable
+				end
 				if self:VendorSellsReagent(reagentID) then	-- if it's available from a vendor, then only worry about bag inventory
 					local vendorAvailable, vendorAvailableAlt = Skillet:VendorItemAvailable(reagentID)
 					numCraftVendor = math.min(numCraftVendor, vendorAvailable)
@@ -197,24 +208,13 @@ end
 
 function Skillet:GetInventory(player, reagentID)
 	--DA.DEBUG(0,"GetInventory("..tostring(player)..", "..tostring(reagentID)..")")
-	local numCanUse
 	if player and reagentID then
-		if player == self.currentPlayer then			-- UnitName("player")
-			numCanUse = GetItemCount(reagentID,false)	-- In Classic just bags
-		end
 		if self.db.realm.inventoryData[player] and self.db.realm.inventoryData[player][reagentID] then
 			--DA.DEBUG(1,"inventoryData= "..tostring(self.db.realm.inventoryData[player][reagentID]))
-			local data = { string.split(" ", self.db.realm.inventoryData[player][reagentID]) }
-			if numCanUse and data[1] and tonumber(numCanUse) ~= tonumber(data[1]) then
-				DA.DEBUG(0,"inventoryData is stale")
-			end
-			if #data == 1 then			-- no craftability info yet
-				return tonumber(data[1]) or 0, 0
-			else
-				return tonumber(data[1]) or 0, tonumber(data[2]) or 0
-			end
+			local have, make = string.split(" ", self.db.realm.inventoryData[player][reagentID])
+			return tonumber(have) or 0, tonumber(make) or 0
 		elseif player == self.currentPlayer then	-- UnitName("player")
-			return tonumber(numCanUse) or 0, 0
+			return GetItemCount(reagentID,false) or 0, 0
 		end
 	end
 	return 0, 0		-- have, make

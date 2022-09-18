@@ -1,15 +1,13 @@
-## Interface: 20504
+## Interface: 30400
 
 ## Title: Leatrix Maps
 ## Notes: Enhancements for your maps.
 
-## Version: 2.5.101
+## Version: 3.0.07
 ## Author: Leatrix
 ## SavedVariables: LeaMapsDB
 
 ## X-Curse-Project-ID: 463868
-
-## OptionalDeps: NDui
 
 Leatrix_Maps_Library.lua
 Leatrix_Maps_Locale.lua
