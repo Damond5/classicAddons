@@ -1,9 +1,8 @@
 local E, _, V, P, G = unpack(ElvUI)
 local C, L = unpack(E.OptionsUI)
-local AB = E:GetModule('ActionBars')
 local Misc = E:GetModule('Misc')
 local Layout = E:GetModule('Layout')
-local Totems = E:GetModule('Totems')
+local TotemTracker = E:GetModule('TotemTracker')
 local Blizzard = E:GetModule('Blizzard')
 local NP = E:GetModule('NamePlates')
 local UF = E:GetModule('UnitFrames')
@@ -35,7 +34,7 @@ GenGen.taintLog = ACH:Toggle(L["Log Taints"], L["Send ADDON_ACTION_BLOCKED error
 GenGen.decimalLength = ACH:Range(L["Decimal Length"], L["Controls the amount of decimals used in values displayed on elements like NamePlates and UnitFrames."], 3, { min = 0, max = 4, step = 1 }, nil, nil, function(info, value) E.db.general[info[#info]] = value E:BuildPrefixValues() E:StaggeredUpdateAll() end)
 GenGen.smoothingAmount = ACH:Range(L["Smoothing Amount"], L["Controls the speed at which smoothed bars will be updated."], 4, { isPercent = true, min = 0.2, max = 0.8, softMax = 0.75, softMin = 0.25, step = 0.01 }, nil, nil, function(info, value) E.db.general[info[#info]] = value E:SetSmoothingAmount(value) end)
 
-GenGen.locale = ACH:Select(L["LANGUAGE"], nil, 5, { deDE = 'Deutsch', enUS = 'English', esMX = 'Español', frFR = 'Français', ptBR = 'Português', ruRU = 'Русский', zhCN = '简体中文', zhTW = '正體中文', koKR = '한국어', itIT = 'Italiano' }, nil, nil, function() return E.global.general.locale end, function(_, value) E.global.general.locale = value E.ShowPopup = true end)
+GenGen.locale = ACH:Select(L["LANGUAGE"], nil, 5, { deDE = 'Deutsch', enUS = 'English', esMX = 'Español', frFR = 'Français', ptBR = 'Português', ruRU = 'Русский', trTR ='Turkce', zhCN = '简体中文', zhTW = '正體中文', koKR = '한국어', itIT = 'Italiano' }, nil, nil, function() return E.global.general.locale end, function(_, value) E.global.general.locale = value E.ShowPopup = true end)
 GenGen.messageRedirect = ACH:Select(L["Chat Output"], L["This selects the Chat Frame to use as the output of ElvUI messages."], 6, function() return GetChatWindowInfo() end)
 GenGen.numberPrefixStyle = ACH:Select(L["Unit Prefix Style"], L["The unit prefixes you want to use when values are shortened in ElvUI. This is mostly used on UnitFrames."], 7, { TCHINESE = '萬, 億', CHINESE = '万, 亿', ENGLISH = 'K, M, B', GERMAN = 'Tsd, Mio, Mrd', KOREAN = '천, 만, 억', METRIC = 'k, M, G' }, nil, nil, nil, function(info, value) E.db.general[info[#info]] = value E:BuildPrefixValues() E:StaggeredUpdateAll() end)
 
@@ -65,30 +64,13 @@ GenGen.automation.args.autoAcceptInvite = ACH:Toggle(L["Accept Invites"], L["Aut
 GenGen.automation.args.autoTrackReputation = ACH:Toggle(L["Auto Track Reputation"], nil, 4)
 GenGen.automation.args.autoRepair = ACH:Select(L["Auto Repair"], L["Automatically repair using the following method when visiting a merchant."], 5, { NONE = L["None"], GUILD = not E.Classic and L["Guild"] or nil, PLAYER = L["Player"] })
 
-GenGen.totems = ACH:Group(L["Class Totems"], nil, 70, nil, function(info) return E.db.general.totems[info[#info]] end, function(info, value) E.db.general.totems[info[#info]] = value if E.Wrath then AB:PositionAndSizeTotemBar() else Totems:PositionAndSize() end end, function() return not E.private.general.totemBar end)
+GenGen.totems = ACH:Group(E.NewSign..L["Totem Tracker"], nil, 70, nil, function(info) return E.db.general.totems[info[#info]] end, function(info, value) E.db.general.totems[info[#info]] = value TotemTracker:PositionAndSize() end, function() return not E.private.general.totemTracker end)
+GenGen.totems.args.enable = ACH:Toggle(L["Enable"], nil, 1, nil, nil, nil, function() return E.private.general.totemTracker end, function(_, value) E.private.general.totemTracker = value; E.ShowPopup = true end, false)
+GenGen.totems.args.size = ACH:Range(L["Button Size"], nil, 2, { min = 24, max = 60, step = 1 }, nil, nil, nil, nil, E.Wrath)
+GenGen.totems.args.spacing = ACH:Range(L["Button Spacing"], nil, 3, { min = 1, max = 10, step = 1 })
+GenGen.totems.args.sortDirection = ACH:Select(L["Sort Direction"], nil, 4, { ASCENDING = L["Ascending"], DESCENDING = L["Descending"] })
+GenGen.totems.args.growthDirection = ACH:Select(L["Bar Direction"], nil, 5, { VERTICAL = L["Vertical"], HORIZONTAL = L["Horizontal"] })
 GenGen.totems.inline = true
-GenGen.totems.args.enable = ACH:Toggle(L["Enable"], nil, 1, nil, nil, nil, function() return E.private.general.totemBar end, function(_, value) E.private.general.totemBar = value; E.ShowPopup = true end, false)
-GenGen.totems.args.mouseover = ACH:Toggle(L["Mouseover"], nil, 2, nil, nil, nil, nil, nil, nil, not E.Wrath)
-GenGen.totems.args.buttonGroup = ACH:Group("Button Options", nil, 3)
-GenGen.totems.args.buttonGroup.inline = true
-GenGen.totems.args.buttonGroup.args.size = ACH:Range(L["Button Size"], nil, 1, { min = 24, max = 60, step = 1 }, nil, nil, nil, nil, E.Wrath)
-GenGen.totems.args.buttonGroup.args.buttonSize = ACH:Range(L["Button Size"], nil, 1, { min = 24, max = 60, step = 1 }, nil, nil, nil, nil, not E.Wrath)
-GenGen.totems.args.buttonGroup.args.spacing = ACH:Range(L["Button Spacing"], nil, 2, { min = 1, max = 10, step = 1 })
-GenGen.totems.args.buttonGroup.args.alpha = ACH:Range(L["Alpha"], L["Change the alpha level of the frame."], 3, { min = 0, max = 1, step = 0.01, isPercent = true }, nil, nil, nil, nil, not E.Wrath)
-GenGen.totems.args.buttonGroup.args.sortDirection = ACH:Select(L["Sort Direction"], nil, 3, { ASCENDING = L["Ascending"], DESCENDING = L["Descending"] }, nil, nil, nil, nil, nil, E.Wrath)
-GenGen.totems.args.buttonGroup.args.growthDirection = ACH:Select(L["Bar Direction"], nil, 4, { VERTICAL = L["Vertical"], HORIZONTAL = L["Horizontal"] }, nil, nil, nil, nil, nil, E.Wrath)
-GenGen.totems.args.flyoutGroup = ACH:Group("Flyout Options", nil, 4, nil, nil, nil, nil, not E.Wrath)
-GenGen.totems.args.flyoutGroup.inline = true
-GenGen.totems.args.flyoutGroup.args.flyoutSize = ACH:Range("Flyout Size", nil, 1, { min = 24, max = 60, step = 1 })
-GenGen.totems.args.flyoutGroup.args.flyoutSpacing = ACH:Range("Flyout Spacing", nil, 2, { min = 1, max = 10, step = 1 })
-GenGen.totems.args.flyoutGroup.args.flyoutDirection = ACH:Select(L["Flyout Direction"], nil, 3, { UP = L["Up"], DOWN = L["Down"] })
--- TODO: Wrath (Add keybind text position + x/y offset)
-GenGen.totems.args.fontGroup = ACH:Group(L["Font Group"], nil, 5, nil, function(info) return E.db.general.totems[info[#info]] end, function(info, value) E.db.general.totems[info[#info]] = value AB:UpdateTotemBindings(info[#info], value, true) end, nil, not E.Wrath)
-GenGen.totems.args.fontGroup.inline = true
-GenGen.totems.args.fontGroup.args.font = ACH:SharedMediaFont(L["Font"], nil, 1)
-GenGen.totems.args.fontGroup.args.fontSize = ACH:Range(L["Font Size"], nil, 2, C.Values.FontSize)
-GenGen.totems.args.fontGroup.args.fontOutline = ACH:FontFlags(L["Font Outline"], nil, 3)
-GenGen.totems.args.visibility = ACH:Input(L["Visibility State"], L["This works like a macro, you can run different situations to get the actionbar to show/hide differently.\n Example: '[combat] show;hide'"], 20, nil, 'full', nil, function(_, value) E.db.general.totems.visibility = value AB:PositionAndSizeTotemBar() end, nil, not E.Wrath)
 
 General.media = ACH:Group(L["Media"], nil, 5, nil, function(info) return E.db.general[info[#info]] end, function(info, value) E.db.general[info[#info]] = value end)
 local Media = General.media.args
@@ -111,7 +93,7 @@ Media.fontHeader = ACH:Header(L["Fonts"], 10)
 
 Media.general = ACH:Group('', nil, 11, nil, nil, function(info, value) E.db.general[info[#info]] = value E:UpdateMedia() E:UpdateFontTemplates() end)
 Media.general.args.font = ACH:SharedMediaFont(L["Default Font"], L["The font that the core of the UI will use."], 1)
-Media.general.args.fontSize = ACH:Range(L["Font Size"], L["Set the font size for everything in UI. Note: This doesn't effect somethings that have their own seperate options (UnitFrame Font, Datatext Font, ect..)"], 2, C.Values.FontSize)
+Media.general.args.fontSize = ACH:Range(L["Font Size"], L["Set the font size for everything in UI. Note: This doesn't effect somethings that have their own separate options (UnitFrame Font, Datatext Font, ect..)"], 2, C.Values.FontSize)
 Media.general.args.fontStyle = ACH:FontFlags(L["Font Outline"], nil, 3)
 Media.general.args.applyFontToAll = ACH:Execute(L["Apply Font To All"], L["Applies the font and font size settings throughout the entire user interface. Note: Some font size settings will be skipped due to them having a smaller font size by default."], 4, function() E:StaticPopup_Show('APPLY_FONT_WARNING') end)
 Media.general.inline = true
@@ -226,6 +208,7 @@ blizz.general.args.raidUtility = ACH:Toggle(L["RAID_CONTROL"], L["Enables the El
 blizz.general.args.voiceOverlay = ACH:Toggle(L["Voice Overlay"], L["Replace Blizzard's Voice Overlay."], 5, nil, nil, nil, function(info) return E.private.general[info[#info]] end, function(info, value) E.private.general[info[#info]] = value E.ShowPopup = true end)
 blizz.general.args.resurrectSound = ACH:Toggle(L["Resurrect Sound"], L["Enable to hear sound if you receive a resurrect."], 6)
 blizz.general.args.loot = ACH:Toggle(L["Loot Frame"], L["Enable/Disable the loot frame."], 7, nil, nil, nil, function(info) return E.private.general[info[#info]] end, function(info, value) E.private.general[info[#info]] = value E.ShowPopup = true end)
+blizz.general.args.hideZoneText = ACH:Toggle(L["Hide Zone Text"], L["Enable/Disable the on-screen zone text when you change zones."], 8, nil, nil, nil, function(info) return E.db.general[info[#info]] end, function(info, value) E.db.general[info[#info]] = value; Misc:ZoneTextToggle() end)
 blizz.general.args.spacer1 = ACH:Spacer(14, 'full')
 blizz.general.args.commandBarSetting = ACH:Select(L["Order Hall Command Bar"], nil, 15, { DISABLED = L["Disable"], ENABLED = L["Enable"], ENABLED_RESIZEPARENT = L["Enable + Adjust Movers"] }, nil, nil, function(info) return E.global.general[info[#info]] end, function(info, value) E.global.general[info[#info]] = value E.ShowPopup = true end, nil, not E.Retail)
 blizz.general.args.vehicleSeatIndicatorSize = ACH:Range(L["Vehicle Seat Indicator Size"], nil, 16, { min = 64, max = 128, step = 4 }, nil, nil, function(info, value) E.db.general[info[#info]] = value Blizzard:UpdateVehicleFrame() end, nil, not E.Retail)
@@ -271,6 +254,6 @@ blizz.itemLevelInfo.args.fontGroup.inline = true
 blizz.objectiveFrameGroup = ACH:Group(L["Objective Frame"], nil, 5, nil, function(info) return E.db.general[info[#info]] end, nil, function() return (E:IsAddOnEnabled('!KalielsTracker') or E:IsAddOnEnabled('DugisGuideViewerZ')) end, not (E.Retail or E.Wrath))
 blizz.objectiveFrameGroup.args.objectiveFrameAutoHide = ACH:Toggle(L["Auto Hide"], L["Automatically hide the objective frame during boss or arena fights."], 1, nil, nil, nil, nil, function(info, value) E.db.general[info[#info]] = value Blizzard:SetObjectiveFrameAutoHide() end, nil, not (E.Retail or E.Wrath))
 blizz.objectiveFrameGroup.args.objectiveFrameAutoHideInKeystone = ACH:Toggle(L["Hide In Keystone"], L["Automatically hide the objective frame during boss fights while you are running a key."], 2, nil, nil, nil, nil, nil, nil, function() return not E.Retail or not E.db.general.objectiveFrameAutoHide end)
-blizz.objectiveFrameGroup.args.objectiveFrameHeight = ACH:Range(L["Objective Frame Height"], L["Height of the objective tracker. Increase size to be able to see more objectives."], 3, { min = 400, max = ceil(E.screenHeight), step = 1 }, nil, nil, function(info, value) E.db.general[info[#info]] = value Blizzard:SetObjectiveFrameHeight() end, nil, not (E.Retail or E.Wrath))
+blizz.objectiveFrameGroup.args.objectiveFrameHeight = ACH:Range(L["Objective Frame Height"], L["Height of the objective tracker. Increase size to be able to see more objectives."], 3, { min = 400, max = ceil(E.screenHeight), step = 1 }, nil, nil, function(info, value) E.db.general[info[#info]] = value Blizzard:SetObjectiveFrameHeight() end, nil, not E.Wrath)
 blizz.objectiveFrameGroup.args.bonusObjectivePosition = ACH:Select(L["Bonus Reward Position"], L["Position of bonus quest reward frame relative to the objective tracker."], 4, { RIGHT = L["Right"], LEFT = L["Left"], AUTO = L["Automatic"] }, nil, nil, nil, nil, nil, not E.Retail)
-blizz.objectiveFrameGroup.args.torghastBuffsPosition = ACH:Select(L["Torghast Buffs Position"], L["Position of the Torghast buff list relative to the objective tracker."], 5, { RIGHT = L["Right"], LEFT = L["Left"], AUTO = L["Automatic"] }, nil, nil, nil, function(info, value) E.db.general[info[#info]] = value Blizzard:SetupTorghastBuffFrame() end, nil, not E.Retail)
+blizz.objectiveFrameGroup.args.torghastBuffsPosition = ACH:Select(L["Maw Buffs Position"], L["Position of the Maw Buffs list relative to the objective tracker."], 5, { RIGHT = L["Right"], LEFT = L["Left"], AUTO = L["Automatic"] }, nil, nil, nil, function(info, value) E.db.general[info[#info]] = value Blizzard:HandleMawBuffsFrame() end, nil, not E.Retail)

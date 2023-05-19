@@ -67,6 +67,8 @@ L["CONFIRMQUEUECLEARDESC"] = "使用Alt+左键代替左键来清除队列"
 L["CONFIRMQUEUECLEARNAME"] = "使用Alt键单击来清除队列"
 L["Conflict with the addon TradeSkillMaster"] = "与TradeSkillMaster插件冲突"
 L["Copy"] = "复制"
+--[[Translation missing --]]
+L["Cost"] = "Cost"
 L["Could not find bag space for"] = "背包无可用空格"
 L["craftable"] = "可制造"
 L["CRAFTBUTTONSDESC"] = "框架中包含专业制作按钮"
@@ -126,6 +128,10 @@ L["Hide trivial"] = "隐藏无价值的"
 L["Hide uncraftable"] = "隐藏不能制作的"
 L["HIDEBLIZZARDFRAMEDESC"] = "当显示Skillet框体时，隐藏暴雪专业技能框体。"
 L["HIDEBLIZZARDFRAMENAME"] = "隐藏暴雪框体"
+--[[Translation missing --]]
+L["HIGHERVELLUMDESC"] = "Use a higher level of vellum when correct vellum is unavailable."
+--[[Translation missing --]]
+L["HIGHERVELLUMNAME"] = "Use higher vellum"
 L["Ignore"] = "忽略"
 --[[Translation missing --]]
 L["IGNOREBANKEDREAGENTSDESC"] = "Ignore banked reagents when queuing craftable reagents"
@@ -172,6 +178,8 @@ L["Market"] = "市场"
 --[[Translation missing --]]
 L["Merchant"] = "Merchant"
 L["Merge items"] = "合并物品"
+--[[Translation missing --]]
+L["Most Sold"] = "Most Sold"
 L["Move Down"] = "下移"
 L["Move to Bottom"] = "下移至底部"
 L["Move to Top"] = "上移至顶部"
@@ -190,11 +198,15 @@ L["Options"] = "选项"
 L["Order by item"] = "以物品排序"
 L["Paste"] = "粘贴"
 L["Pause"] = "暂停"
+--[[Translation missing --]]
+L["Percent"] = "Percent"
 L["Plugins"] = "插件"
 L["Press"] = "按 "
 L["Press Okay to continue changing professions"] = "按确认来切换专业技能"
 L["Press Process to continue"] = "按下处理继续"
 L["Process"] = "处理"
+--[[Translation missing --]]
+L["Profit"] = "Profit"
 L["Purchased"] = "已购买的"
 L["Queue"] = "队列"
 L["Queue All"] = "列出所有"
@@ -210,6 +222,10 @@ L["QUEUEGLYPHREAGENTSNAME"] = "为铭文列出材料"
 L["QUEUEONLYVIEWDESC"] = "只有在设置时才显示独立队列窗口，清除时显示独立队列窗口和Skillet窗口。"
 L["QUEUEONLYVIEWNAME"] = "仅显示独立队列"
 L["Queues"] = "队列管理"
+--[[Translation missing --]]
+L["QUEUETOOLSDESC"] = "Add missing tools to shopping list"
+--[[Translation missing --]]
+L["QUEUETOOLSNAME"] = "Queue tools"
 L["reagent id seems corrupt!"] = "材料ID错误！"
 L["Reagents"] = "材料"
 L["reagents in inventory"] = "背包中的材料"
@@ -228,6 +244,10 @@ L["RESETRECIPEFILTERDESC"] = "重置配方筛选项"
 L["Retrieve"] = "收回"
 --[[Translation missing --]]
 L["Right-Click for filtering options"] = "Right-Click for filtering options"
+--[[Translation missing --]]
+L["Sales for "] = "Sales for "
+--[[Translation missing --]]
+L["Sales Rate"] = "Sales Rate"
 L["Same faction"] = "同阵营"
 L["Save"] = "储存"
 L["Scale"] = "比例"
@@ -236,8 +256,6 @@ L["SCALETOOLTIPDESC"] = "设定专业技能和材料的鼠标提示缩放大小�
 L["SCALETOOLTIPNAME"] = "缩放所有鼠标提示"
 L["Scan completed"] = "扫描完成"
 L["Scanning tradeskill"] = "扫描商业技能中..."
---[[Translation missing --]]
-L["Scroll of"] = "Scroll of"
 L["Search"] = "搜索"
 L["Select All"] = "全选"
 L["Select None"] = "取消选择"
@@ -252,6 +270,10 @@ L["Shopping List"] = "购物清单"
 L["SHOPPINGCLEARDESC"] = "清除购物清单"
 L["SHOPPINGLISTDESC"] = "显示购物清单"
 L["Show favorite recipes only. Click on a star on the left side of a recipe to set favorite."] = "只显示收藏的食谱。单击食谱左侧的星号来设置收藏。"
+--[[Translation missing --]]
+L["Show News"] = "Show News"
+--[[Translation missing --]]
+L["Show news when a new version is released"] = "Show news when a new version is released"
 L["SHOWBANKALTCOUNTSDESC"] = "计算可制作数量时包含银行及小号"
 L["SHOWBANKALTCOUNTSNAME"] = "包含银行及小号"
 L["SHOWCRAFTCOUNTSDESC"] = "显示配方可制作次数,而非可制作数量"
@@ -283,6 +305,8 @@ L["Start"] = "开始"
 --[[Translation missing --]]
 L["Stop"] = "Stop"
 L["SubClass"] = "子类"
+--[[Translation missing --]]
+L["Suffix"] = "Suffix"
 L["SUPPORTCRAFTINGDESC"] = "包含制作专业支持 (需要重新加载 /reload)"
 L["SUPPORTCRAFTINGNAME"] = "制作支持"
 L["Supported Addons"] = "支持的插件"

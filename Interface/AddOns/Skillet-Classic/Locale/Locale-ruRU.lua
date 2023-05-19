@@ -61,6 +61,8 @@ L["CONFIRMQUEUECLEARDESC"] = "Для сброса очереди использ�
 L["CONFIRMQUEUECLEARNAME"] = "Использовать Alt-нажатие для сброса очереди"
 L["Conflict with the addon TradeSkillMaster"] = "Конфликт с аддоном TradeSkillMaster"
 L["Copy"] = "Копировать"
+--[[Translation missing --]]
+L["Cost"] = "Cost"
 L["Could not find bag space for"] = "Нет места в сумках для"
 L["craftable"] = "создаваемый"
 L["CRAFTBUTTONSDESC"] = [=[Включить кнопки изготовить в рамку
@@ -119,6 +121,10 @@ L["Hide trivial"] = "Скрыть низкоуровневые"
 L["Hide uncraftable"] = "Скрыть несоздаваемые"
 L["HIDEBLIZZARDFRAMEDESC"] = "Скрывать окно умений Blizzard при открытии окна Skillet"
 L["HIDEBLIZZARDFRAMENAME"] = "Скрывать окно Blizzard"
+--[[Translation missing --]]
+L["HIGHERVELLUMDESC"] = "Use a higher level of vellum when correct vellum is unavailable."
+--[[Translation missing --]]
+L["HIGHERVELLUMNAME"] = "Use higher vellum"
 L["Ignore"] = "Игнорировать"
 L["IGNOREBANKEDREAGENTSDESC"] = "Игнорировать реагенты в банке при создании очереди крафта"
 L["IGNOREBANKEDREAGENTSNAME"] = "Игнорировать реагенты в банке"
@@ -161,6 +167,8 @@ L["Lock/Unlock"] = "Закрепить/Открепить"
 L["Market"] = "Торговля"
 L["Merchant"] = "Торговец"
 L["Merge items"] = "Объединить предметы"
+--[[Translation missing --]]
+L["Most Sold"] = "Most Sold"
 L["Move Down"] = "Преместить на позицию ниже"
 L["Move to Bottom"] = "Переместить в конец очереди"
 L["Move to Top"] = "Переместить в начало очереди"
@@ -179,11 +187,15 @@ L["Options"] = "Опции"
 L["Order by item"] = "Сортировать по предметам"
 L["Paste"] = "Вставить"
 L["Pause"] = "Пауза"
+--[[Translation missing --]]
+L["Percent"] = "Percent"
 L["Plugins"] = "Плагины"
 L["Press"] = "Нажмите"
 L["Press Okay to continue changing professions"] = "Нажмите Okay для продолжения смены профессии"
 L["Press Process to continue"] = "Нажмите \"Продолжить\" для продолжения"
 L["Process"] = "Продолжить"
+--[[Translation missing --]]
+L["Profit"] = "Profit"
 L["Purchased"] = "Покупаемые"
 L["Queue"] = "В очередь"
 L["Queue All"] = "Всё в очередь"
@@ -199,6 +211,10 @@ L["QUEUEGLYPHREAGENTSNAME"] = "В очередь реагенты для сим�
 L["QUEUEONLYVIEWDESC"] = "Показывать окно автономной очереди только в том случае, если оно установлено, показывать как окно автономной очереди, так и окно Skillet, если оно отключено."
 L["QUEUEONLYVIEWNAME"] = "Показывать только автономную очередь"
 L["Queues"] = "Очереди"
+--[[Translation missing --]]
+L["QUEUETOOLSDESC"] = "Add missing tools to shopping list"
+--[[Translation missing --]]
+L["QUEUETOOLSNAME"] = "Queue tools"
 L["reagent id seems corrupt!"] = "Идентификатор реагента кажется поврежденным!"
 L["Reagents"] = "Реагенты"
 L["reagents in inventory"] = "реагенты в инвентаре"
@@ -216,6 +232,10 @@ L["RESETDESC"] = "Сброс позиции окна Skillet"
 L["RESETRECIPEFILTERDESC"] = "Сбросить фильтр рецептов"
 L["Retrieve"] = "Отыскивать"
 L["Right-Click for filtering options"] = "Нажать правой кнопкой мышки для фильтрации настроек"
+--[[Translation missing --]]
+L["Sales for "] = "Sales for "
+--[[Translation missing --]]
+L["Sales Rate"] = "Sales Rate"
 L["Same faction"] = "Та же фракция"
 L["Save"] = "Сохранить"
 L["Scale"] = "Масштаб"
@@ -225,8 +245,6 @@ L["SCALETOOLTIPNAME"] = [=[Масштабировать все всплываю�
 ]=]
 L["Scan completed"] = "Сканирование завершено"
 L["Scanning tradeskill"] = "Сканирование профессии"
---[[Translation missing --]]
-L["Scroll of"] = "Scroll of"
 L["Search"] = "Поиск"
 L["Select All"] = "Выбрать все"
 L["Select None"] = "Отменить выбор"
@@ -241,6 +259,10 @@ L["Shopping List"] = "Список покупок"
 L["SHOPPINGCLEARDESC"] = "Очистить список покупок"
 L["SHOPPINGLISTDESC"] = "Открыть список покупок"
 L["Show favorite recipes only. Click on a star on the left side of a recipe to set favorite."] = "Показывать только избранные рецепты. Кликните по звездочке слева от рецепта, что бы добавить его в избранное."
+--[[Translation missing --]]
+L["Show News"] = "Show News"
+--[[Translation missing --]]
+L["Show news when a new version is released"] = "Show news when a new version is released"
 L["SHOWBANKALTCOUNTSDESC"] = "Когда подсчитывается и отображается число создаваемых предметов, в подсчет предметов включается содержимое банка и инвентаря других ваших персонажей."
 L["SHOWBANKALTCOUNTSNAME"] = "Включить содержимое банка и инвентаря альтов"
 L["SHOWCRAFTCOUNTSDESC"] = "Показывать сколько раз вы можете создать вещь, а не общее число производимых предметов"
@@ -272,6 +294,8 @@ L["Start"] = "Начать"
 --[[Translation missing --]]
 L["Stop"] = "Stop"
 L["SubClass"] = "Подкласс"
+--[[Translation missing --]]
+L["Suffix"] = "Suffix"
 L["SUPPORTCRAFTINGDESC"] = "Включите поддержку для ремесленных профессий (требуется /reload)"
 L["SUPPORTCRAFTINGNAME"] = "Поддержка ремесла"
 L["Supported Addons"] = "Поддерживаемые модификации"

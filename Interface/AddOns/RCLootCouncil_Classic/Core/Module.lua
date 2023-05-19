@@ -27,6 +27,7 @@ function ClassicModule:OnEnable ()
 
    addon.db.global.Classic_oldVersion = addon.db.global.Classic_version
    addon.db.global.Classic_version = self.version
+   addon.db.global.Classic_game = WOW_PROJECT_ID
    -- Bump logMaxEntries
    addon.db.global.logMaxEntries = 4000
 
@@ -126,8 +127,10 @@ end
 -- Most of those functions might get removed in retail anyway, so just reimplement it.
 function ClassicModule:OnLootOpen()
    if addon.handleLoot then
+      local db = addon:Getdb()
       wipe(addon.modules.RCLootCouncilML.lootQueue)
-      if not InCombatLockdown() then
+      -- Only proceed if we're not in combat, or our settings means we won't be creating any frames.
+      if not InCombatLockdown() or (db.autoStart and db.awardLater and addon.candidates[addon.playerName] and #addon.council > 0) or db.skipCombatLockdown then
          addon.modules.RCLootCouncilML:LootOpened()
       else
          addon:Print(L["You can't start a loot session while in combat."])
@@ -150,4 +153,9 @@ function ClassicModule:UpdateBlacklist()
    for id in pairs(addon.db.profile.alwaysAutoAwardItems) do
       addon.blackListOverride[id] = true
    end
+end
+
+---@return boolean #True if running Classic Era game
+function ClassicModule:IsClassicEra()
+   return WOW_PROJECT_CLASSIC == WOW_PROJECT_ID
 end

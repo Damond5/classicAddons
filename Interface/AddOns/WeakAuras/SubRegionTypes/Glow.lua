@@ -1,14 +1,11 @@
 if not WeakAuras.IsLibsOK() then return end
+--- @type string, Private
 local AddonName, Private = ...
 
 local LCG = LibStub("LibCustomGlow-1.0")
-local MSQ, MSQ_Version = LibStub("Masque", true);
-if MSQ then
-  if MSQ_Version <= 80100 then
-    MSQ = nil
-  end
-end
-local L = WeakAuras.L;
+
+local MSQ = LibStub("Masque", true)
+local L = WeakAuras.L
 
 local default = function(parentType)
   local options = {
@@ -184,16 +181,16 @@ local funcs = {
       if (visible) then
         self.__MSQ_Shape = self:GetParent().button.__MSQ_Shape
         self:Show()
-        glowStart(self, self, color);
+        glowStart(self, self, color)
       else
-        self.glowStop(self);
+        self.glowStop(self)
         self:Hide()
       end
     elseif (visible) then
       self:Show()
-      glowStart(self, self, color);
+      glowStart(self, self, color)
     else
-      self.glowStop(self);
+      self.glowStop(self)
       self:Hide()
     end
   end,
@@ -356,7 +353,7 @@ local function modify(parent, region, parentData, data, first)
 end
 
 -- This is used by the templates to add glow
-function WeakAuras.getDefaultGlow(regionType)
+function Private.getDefaultGlow(regionType)
   if regionType == "aurabar" then
     return {
       ["type"] = "subglow",
@@ -418,4 +415,5 @@ local function addDefaultsForNewAura(data)
   end
 end
 
-WeakAuras.RegisterSubRegionType("subglow", L["Glow"], supports, create, modify, onAcquire, onRelease, default, addDefaultsForNewAura, properties);
+WeakAuras.RegisterSubRegionType("subglow", L["Glow"], supports, create, modify, onAcquire, onRelease,
+                                default, addDefaultsForNewAura, properties)

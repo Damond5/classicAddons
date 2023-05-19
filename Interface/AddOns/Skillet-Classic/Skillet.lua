@@ -29,15 +29,15 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Skillet")
 Skillet.L = L
 
 -- Get version info from the .toc file
-local MAJOR_VERSION = GetAddOnMetadata("Skillet-Classic", "Version");
-local ADDON_BUILD = ((select(4, GetBuildInfo())) < 20000 and "Classic") or ((select(4, GetBuildInfo())) < 30000 and "BCC") or ((select(4, GetBuildInfo())) < 40000 and "Wrath") or "Retail"
-Skillet.version = MAJOR_VERSION
-Skillet.build = ADDON_BUILD
+local GetAddOnMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
+Skillet.version = GetAddOnMetadata("Skillet-Classic", "Version")
+Skillet.interface = select(4, GetBuildInfo())
+Skillet.build = (Skillet.interface < 20000 and "Classic") or (Skillet.interface < 30000 and "BCC") or (Skillet.interface < 40000 and "Wrath") or "Retail"
 Skillet.project = WOW_PROJECT_ID
 local isRetail = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
 local isClassic = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
 local isBCC = WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC
-local isWrath = Skillet.build == "Wrath"
+local isWrath = WOW_PROJECT_ID == WOW_PROJECT_WRATH_CLASSIC
 
 Skillet.isCraft = false			-- true for the Blizzard Craft UI, false for the Blizzard TradeSkill UI
 Skillet.lastCraft = false		-- help events know when to call ConfigureRecipeControls()
@@ -62,6 +62,7 @@ local defaults = {
 		display_item_tooltip = true,					-- show item tooltip or recipe tooltip
 		link_craftable_reagents = true,
 		queue_craftable_reagents = true,
+		queue_tools = false,
 		ignore_banked_reagents = false,
 		queue_glyph_reagents = false,					-- not in Classic
 		display_required_level = false,
@@ -79,6 +80,7 @@ local defaults = {
 		queue_crafts = false,
 		include_craftbuttons = true,
 		enchant_scrolls = false,
+		use_higher_vellum = false,
 		include_tradebuttons = true,
 		search_includes_reagents = true,
 		interrupt_clears_queue = false,
@@ -182,14 +184,14 @@ end
 -- Called with events that should have an existing profile.
 --
 function Skillet:RefreshConfig(event, database, profile)
-	DA.CHAT("RefreshConfig("..tostring(event)..", "..tostring(profile)..")")
+	DA.MARK3("RefreshConfig("..tostring(event)..", "..tostring(profile)..")")
 end
 
 --
 -- Called with events that need the profile created.
 --
 function Skillet:InitializeProfile(event, database, profile)
-	DA.CHAT("InitializeProfile("..tostring(event)..", "..tostring(profile)..")")
+	DA.MARK3("InitializeProfile("..tostring(event)..", "..tostring(profile)..")")
 	self:ConfigureProfile()
 	self:ConfigurePlayerProfile()
 end
@@ -212,6 +214,7 @@ function Skillet:ConfigureProfile()
 	Skillet.TableDump = Skillet.db.profile.TableDump
 	Skillet.TraceShow = Skillet.db.profile.TraceShow
 	Skillet.TraceLog = Skillet.db.profile.TraceLog
+	Skillet.TraceLog2 = Skillet.db.profile.TraceLog2
 	Skillet.ProfileShow = Skillet.db.profile.ProfileShow
 --
 -- Profile variable to control Skillet fixes for Blizzard bugs.
@@ -238,14 +241,8 @@ function Skillet:ConfigurePlayerProfile()
 	end
 	if not self.db.profile.plugins then
 		self.db.profile.plugins = {}
+		self:InitializePlugins()
 	end
-	if self.db.profile.plugins.recipeNamePlugin then
-		if not self.db.profile.plugins.recipeNameSuffix then
-			self.db.profile.plugins.recipeNameSuffix = self.db.profile.plugins.recipeNamePlugin
-		end
-		self.db.profile.plugins.recipeNamePlugin = nil
-	end
-	self:InitializePlugins()
 end
 
 --
@@ -279,9 +276,6 @@ function Skillet:OnInitialize()
 --
 -- Clean up obsolete data
 --
-	if self.db.global.cachedGuildbank then
-		self.db.global.cachedGuildbank = nil
-	end
 
 --
 -- Change the dataVersion when (major) code changes
@@ -357,6 +351,9 @@ function Skillet:OnInitialize()
 	if not self.db.global.cachedGuildbank then
 		self.db.global.cachedGuildbank = {}
 	end
+	if not self.db.global.customPrice then
+		self.db.global.customPrice = {}
+	end
 
 --
 -- Hook default tooltips
@@ -420,6 +417,8 @@ StaticPopupDialogs["SKILLET_IGNORE_CHANGE"] = {
 -- Now do the character initialization
 --
 	self:InitializeDatabase(UnitName("player"))
+	self:InitializePlugins()
+	self.NewsGUI:Initialize()
 end
 
 --
@@ -500,7 +499,6 @@ function Skillet:InitializeMissingVendorItems()
 		[4399]	= "Wooden Stock",
 		[3857]	= "Coal",
 		[52188] = "Jeweler's Setting",
-		[38682] = "Enchanting Vellum",
 	}
 end
 
@@ -686,12 +684,20 @@ function Skillet:OnEnable()
 		self:RegisterEvent("CRAFT_UPDATE")			-- craft event
 		self:RegisterEvent("UNIT_PET_TRAINING_POINTS")	-- craft event
 	end
-	self:RegisterEvent("UNIT_INVENTORY_CHANGED") 	-- Not sure if this is helpful but we will track it.
 	self:RegisterEvent("UNIT_PORTRAIT_UPDATE")		-- Not sure if this is helpful but we will track it.
 	self:RegisterEvent("SPELLS_CHANGED")			-- Not sure if this is helpful but we will track it.
+--	self:RegisterEvent("BAG_OPEN")					-- Not sure if this is helpful but we will track it.
+--	self:RegisterEvent("BAG_CLOSED")				-- Not sure if this is helpful but we will track it.
+--	self:RegisterEvent("BAG_CONTAINER_UPDATE")		-- Not sure if this is helpful but we will track it.
 
 	self:RegisterEvent("BAG_UPDATE") 				-- Fires for both bag and bank updates.
-	self:RegisterEvent("BAG_UPDATE_DELAYED")		-- Fires after all applicable BAG_UPADTE events for a specific action have been fired.
+	self:RegisterEvent("BAG_UPDATE_DELAYED")		-- Fires after all applicable BAG_UPDATE events for a specific action have been fired.
+	self:RegisterEvent("UNIT_INVENTORY_CHANGED")	-- BAG_UPDATE_DELAYED seems to have disappeared. Using this instead.
+--
+-- Events that replace *_SHOW and *_CLOSED by adding a PlayerInteractionType parameter
+--
+--	self:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_SHOW")
+--	self:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_HIDE")
 --
 -- MERCHANT_SHOW, MERCHANT_HIDE, MERCHANT_UPDATE events needed for auto buying.
 --
@@ -705,7 +711,7 @@ function Skillet:OnEnable()
 	self:RegisterEvent("PLAYERBANKSLOTS_CHANGED")
 	self:RegisterEvent("BANKFRAME_CLOSED")
 
-	if isBCC then
+	if not isClassic then
 		self:RegisterEvent("GUILDBANKFRAME_OPENED")
 		self:RegisterEvent("GUILDBANKBAGSLOTS_CHANGED")
 		self:RegisterEvent("GUILDBANKFRAME_CLOSED")
@@ -734,18 +740,35 @@ function Skillet:OnEnable()
 	self:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
 	self:RegisterEvent("UI_ERROR_MESSAGE")
 	self:RegisterEvent("UI_INFO_MESSAGE")
+--	self:RegisterEvent("GET_ITEM_INFO_RECEIVED");
+--
+-- more useful for debugging (for now)
+--
+	self:RegisterEvent("TRADE_SHOW");
+	self:RegisterEvent("TRADE_CLOSED")
+	self:RegisterEvent("TRADE_MONEY_CHANGED")
+	self:RegisterEvent("TRADE_TARGET_ITEM_CHANGED");
+	self:RegisterEvent("TRADE_PLAYER_ITEM_CHANGED")
+	self:RegisterEvent("TRADE_REPLACE_ENCHANT")
+	self:RegisterEvent("TRADE_POTENTIAL_BIND_ENCHANT");
+	self:RegisterEvent("TRADE_REQUEST")
+	self:RegisterEvent("TRADE_REQUEST_CANCEL")
+	self:RegisterEvent("TRADE_UPDATE");
+	self:RegisterEvent("TRADE_ACCEPT_UPDATE")
+
 --
 -- Debugging cleanup if enabled
 --
 	self:RegisterEvent("PLAYER_LOGOUT")
-
 	self:RegisterEvent("PLAYER_LOGIN")
 	self:RegisterEvent("PLAYER_ENTERING_WORLD")
 	self:RegisterEvent("NEW_RECIPE_LEARNED") -- arg1 = recipeID
 	self:RegisterEvent("SKILL_LINES_CHANGED") -- replacement for CHAT_MSG_SKILL?
 	self:RegisterEvent("LEARNED_SPELL_IN_TAB") -- arg1 = professionID
 
---	self:RegisterEvent("ADDON_ACTION_BLOCKED")
+	self:RegisterEvent("ADDON_ACTION_BLOCKED")
+	self:RegisterEvent("PLAYER_REGEN_DISABLED")
+	self:RegisterEvent("PLAYER_REGEN_ENABLED")
 
 	self.bagsChanged = true
 	self.hideUncraftableRecipes = false
@@ -780,7 +803,7 @@ function Skillet:PLAYER_ENTERING_WORLD()
 	local className, classFile, classId = UnitClass("player")
 	local locale = GetLocale()
 	local _,wowBuild,_,wowVersion = GetBuildInfo();
-	local guid = UnitGUID("player")		-- example: guid="Player-970-0002FD64" kind=="Player" server=="970" ID="0002FD64" 
+	local guid = UnitGUID("player")		-- example: guid="Player-970-0002FD64" kind=="Player" server=="970" ID="0002FD64"
 --
 -- PLAYER_ENTERING_WORLD happens on login and when changing zones so
 -- only save the time of the first one.
@@ -803,6 +826,7 @@ function Skillet:PLAYER_ENTERING_WORLD()
 	SkilletWho.wowBuild = wowBuild
 	SkilletWho.wowVersion = wowVersion
 	SkilletWho.guid = guid
+	SkilletWho.version = Skillet.version
 	if guid then
 		local kind, server, ID = strsplit("-", guid)
 		DA.DEBUG(1,"player="..tostring(player)..", faction="..tostring(faction)..", guid="..tostring(guid)..", server="..tostring(server))
@@ -813,12 +837,19 @@ function Skillet:PLAYER_ENTERING_WORLD()
 --
 		self.db.realm.guid[player]= guid
 		if (server) then
+			if not self.data then
+				self.data = {}
+			end
 			self.data.server = server
 			self.data.realm = realm
 			if not self.db.global.server[server] then
 				self.db.global.server[server] = {}
 			end
 			self.db.global.server[server][realm] = player
+
+			if not self.db.global.customPrice[server] then
+				self.db.global.customPrice[server] = {}
+			end
 			if not self.db.global.faction[server] then
 				self.db.global.faction[server] = {}
 			end
@@ -827,11 +858,26 @@ function Skillet:PLAYER_ENTERING_WORLD()
 	end
 end
 
+--
+-- Skillet-Classic doesn't do well in combat. These functions need to be
+-- flushed out to deal with it gracefully.
+--
 function Skillet:ADDON_ACTION_BLOCKED()
-	DA.TRACE("ADDON_ACTION_BLOCKED")
+	DA.TRACE("ADDON_ACTION_BLOCKED()")
 --	print("|cf0f00000Skillet-Classic|r: Combat lockdown restriction." ..
 --								  " Leave combat and try again.")
 --	self:HideAllWindows()
+end
+
+function Skillet:PLAYER_REGEN_DISABLED()
+	DA.TRACE("PLAYER_REGEN_DISABLED()")
+--	print("|cf0f00000Skillet-Classic|r: Combat lockdown restriction." ..
+--								  " Leave combat and try again.")
+--	self:HideAllWindows()
+end
+
+function Skillet:PLAYER_REGEN_ENABLED()
+	DA.TRACE("PLAYER_REGEN_ENABLED()")
 end
 
 function Skillet:PLAYER_LOGOUT()
@@ -1030,7 +1076,8 @@ end
 -- Called when the addon is disabled
 --
 function Skillet:OnDisable()
-	--DA.DEBUG(0,"OnDisable()");
+	--DA.DEBUG(0,"OnDisable()")
+	self:DisablePlugins()
 	self:UnregisterAllEvents()
 	self:EnableBlizzardFrame()
 end
@@ -1082,6 +1129,16 @@ function Skillet:IsModKey2Down()
 end
 
 --
+-- Make modifier key to alter some behaviors optional.
+--
+function Skillet:IsModKey3Down()
+	if not Skillet.db.profile.nomodkeys and IsAltKeyDown() then
+		return true
+	end
+	return false
+end
+
+--
 -- Checks to see if the current trade is one that we support.
 -- Control key says we do (even if we don't, debugging)
 -- Shift key says we don't support it (even if we do)
@@ -1123,36 +1180,36 @@ function Skillet:SkilletShow()
 	else
 		name, rank, maxRank = GetTradeSkillLine()
 	end
-	DA.DEBUG(0,"name= '"..tostring(name).."', rank= "..tostring(rank)..", maxRank= "..tostring(maxRank))
+	--DA.DEBUG(0,"name= '"..tostring(name).."', rank= "..tostring(rank)..", maxRank= "..tostring(maxRank))
 	if name then self.currentTrade = self.tradeSkillIDsByName[name] end
 	if self:IsSupportedTradeskill(self.currentTrade) and not self.linkedSkill then
 		DA.DEBUG(0,"SkilletShow: "..self.currentTrade..", name= '"..tostring(name).."', rank= "..tostring(rank)..", maxRank= "..tostring(maxRank))
 		self.selectedSkill = nil
 		self.dataScanned = false
 		self.tradeSkillOpen = true
-		if self.isCraft then
-			if Skillet.db.profile.hide_blizzard_frame then
+		if self.db.profile.hide_blizzard_frame and not TSM_API then
+			if self.isCraft then
 				DA.DEBUG(0,"HideUIPanel(CraftFrame)")
 				Skillet.hideCraftFrame = true
 				HideUIPanel(CraftFrame)
 				if Skillet.tradeShow then
 					CloseTradeSkill()
 				end
-			end
-		elseif Skillet.db.profile.hide_blizzard_frame then
-			DA.DEBUG(0,"HideUIPanel(TradeSkillFrame)")
-			Skillet.hideTradeSkillFrame = true
-			HideUIPanel(TradeSkillFrame)
-			if Skillet.craftShow then
-				self:RestoreEnchantButton()
-				CloseCraft()
+			else
+				DA.DEBUG(0,"HideUIPanel(TradeSkillFrame)")
+				Skillet.hideTradeSkillFrame = true
+				HideUIPanel(TradeSkillFrame)
+				if Skillet.craftShow then
+					self:RestoreEnchantButton()
+					CloseCraft()
+				end
 			end
 		end
 --
 -- Processing will continue in SkilletShowWindow when the TRADE_SKILL_UPDATE or CRAFT_UPDATE event fires
 -- (Wrath needs a little help)
 --
-		if self.build == "Wrath" then
+		if isWrath then
 			if self.isCraft then
 				Skillet:CRAFT_UPDATE()
 			else
@@ -1191,11 +1248,11 @@ function Skillet:SkilletShowWindow()
 	if not self:RescanTrade() then
 		if TSM_API or ZygorGuidesViewerClassicSettings then
 			if TSM_API then
-				DA.CHAT(L["Conflict with the addon TradeSkillMaster"])
+				DA.MARK3(L["Conflict with the addon TradeSkillMaster"])
 				self.db.profile.TSM_API = true
 			end
 			if ZygorGuidesViewerClassicSettings then
-				DA.CHAT(L["Conflict with the addon Zygor Guides"])
+				DA.MARK3(L["Conflict with the addon Zygor Guides"])
 				self.db.profile.ZYGOR = true
 			end
 		else
@@ -1240,144 +1297,51 @@ function Skillet:SkilletClose()
 	self.closingTrade = nil
 end
 
-function Skillet:BAG_OPEN(event, bagID)				-- Fires when a non-inventory container is opened.
-	DA.TRACE("BAG_OPEN( "..tostring(bagID).." )")	-- We don't really care
-end
-
-function Skillet:BAG_CLOSED(event, bagID)			-- Fires when the whole bag is removed from 
-	DA.TRACE("BAG_CLOSED( "..tostring(bagID).." )")	-- inventory or bank. We don't really care. 
-end
-
-function Skillet:UNIT_INVENTORY_CHANGED(event, unit)
-	DA.TRACE("UNIT_INVENTORY_CHANGED( "..tostring(unit).." )")
-	if self.tradeSkillOpen then
-		self:AdjustInventory()
-	end
+function Skillet:GET_ITEM_INFO_RECEIVED(event, itemID, success)
+	DA.TRACE("GET_ITEM_INFO_RECEIVED( "..tostring(itemID)..", "..tostring(success).." )")
 end
 
 --
--- Trade window close, the counts may need to be updated.
--- This could be because an enchant has used up mats or the player
--- may have received more mats.
+-- Trade window events (debugging only for now)
 --
-function Skillet:TRADE_CLOSED()
-	self:BAG_UPDATE("FAKE_BAG_UPDATE", 0)
+function Skillet:TRADE_SHOW()
+	DA.TRACE("TRADE_SHOW()")
 end
 
-local function indexBags()
-	DA.TRACE("indexBags()")
-	local player = Skillet.currentPlayer
-	if player then
-		local details = {}
-		local data = {}
-		local bags = {0,1,2,3,4}
-		for _, container in pairs(bags) do
-			for i = 1, GetContainerNumSlots(container), 1 do
-				local item = GetContainerItemLink(container, i)
-				if item then
-					local _,count = GetContainerItemInfo(container, i)
-					local id = Skillet:GetItemIDFromLink(item)
-					local name = string.match(item,"%[.+%]")
-					if name then 
-						name = string.sub(name,2,-2)	-- remove the brackets
-					else
-						name = item						-- when all else fails, use the link
-					end
-					if id then
-						table.insert(details, {
-							["bag"] = container,
-							["slot"] = i,
-							["id"] = id,
-							["name"] = name,
-							["count"] = count,
-						})
-						if not data[id] then
-							data[id] = 0
-						end
-						data[id] = data[id] + count
-					end
-				end
-			end
-		Skillet.db.realm.bagData[player] = data
-		Skillet.db.realm.bagDetails[player] = details
-		end
-	end
+function Skillet:TRADE_MONEY_CHANGED()
+	DA.TRACE("TRADE_MONEY_CHANGED()")
 end
 
---
--- So we can track when the players inventory changes and update craftable counts
---
-function Skillet:BAG_UPDATE(event, bagID)
-	DA.TRACE("BAG_UPDATE( "..bagID.." )")
-	if bagID >= 0 and bagID <= 4 then
-		self.bagsChanged = true				-- an inventory bag update, do nothing until BAG_UPDATE_DELAYED.
-	end
-	if UnitAffectingCombat("player") then
-		return
-	end
-	local showing = false
-	if self.tradeSkillFrame and self.tradeSkillFrame:IsVisible() then
-		showing = true
-	end
-	if self.shoppingList and self.shoppingList:IsVisible() then
-		showing = true
-	end
-	if showing then
-		if bagID == -1 or bagID >= 5 then
---
--- a bank update, process it in ShoppingList.lua
---
-			Skillet:BANK_UPDATE(event,bagID) -- Looks like an event but its not.
-		end
-	end
+function Skillet:TRADE_PLAYER_ITEM_CHANGED(event, tradeSlotIndex)
+	DA.TRACE("TRADE_PLAYER_ITEM_CHANGED( "..tostring(tradeSlotIndex).." )")
 end
 
---
--- Event fires after all applicable BAG_UPDATE events for a specific action have been fired.
--- It doesn't happen as often as BAG_UPDATE so its a better event for us to use.
---
-function Skillet:BAG_UPDATE_DELAYED(event)
-	DA.TRACE("BAG_UPDATE_DELAYED")
-	if Skillet.bagsChanged and not UnitAffectingCombat("player") then
-		indexBags()
-		Skillet.bagsChanged = false
-	end
-	if Skillet.bankBusy then
-		DA.DEBUG(1,"BAG_UPDATE_DELAYED and bankBusy")
-		Skillet.gotBagUpdateEvent = true
-		if Skillet.gotBankEvent and Skillet.gotBagUpdateEvent then
-			Skillet:UpdateBankQueue("bag update") -- Implemented in ShoppingList.lua
-		end
-	end
---[[
-	if Skillet.guildBusy then
-		DA.DEBUG(1,"BAG_UPDATE_DELAYED and guildBusy")
-		Skillet.gotBagUpdateEvent = true
-		if Skillet.gotGuildbankEvent and Skillet.gotBagUpdateEvent then
-			Skillet:UpdateGuildQueue("bag update")
-		end
-	end
-]]--
-	local scanned = false
-	if Skillet.tradeSkillFrame and Skillet.tradeSkillFrame:IsVisible() then
-		Skillet:InventoryScan()
-		scanned = true
-		Skillet:UpdateTradeSkillWindow()
-	end
-	if Skillet.shoppingList and Skillet.shoppingList:IsVisible() then
-		if not scanned then
-			Skillet:InventoryScan()
-			scanned = true
-		end
-		Skillet:UpdateShoppingListWindow(false)
-	end
-	if MerchantFrame and MerchantFrame:IsVisible() then
-		if not scanned then
-			Skillet:InventoryScan()
-			scanned = true
-		end
-		self:UpdateMerchantFrame()
-	end
+function Skillet:TRADE_TARGET_ITEM_CHANGED(event, tradeSlotIndex)
+	DA.TRACE("TRADE_TARGET_ITEM_CHANGED( "..tostring(tradeSlotIndex).." )")
+end
+
+function Skillet:TRADE_REPLACE_ENCHANT()
+	DA.TRACE("TRADE_REPLACE_ENCHANT()")
+end
+
+function Skillet:TRADE_POTENTIAL_BIND_ENCHANT(event, canBecomeBoundForTrade)
+	DA.TRACE("TRADE_POTENTIAL_BIND_ENCHANT( "..tostring(canBecomeBoundForTrade).." )")
+end
+
+function Skillet:TRADE_REQUEST(event, name)
+	DA.TRACE("TRADE_REQUEST( "..tostring(name).." )")
+end
+
+function Skillet:TRADE_REQUEST_CANCEL()
+	DA.TRACE("TRADE_REQUEST_CANCEL()")
+end
+
+function Skillet:TRADE_UPDATE()
+	DA.TRACE("TRADE_UPDATE()")
+end
+
+function Skillet:TRADE_ACCEPT_UPDATE(event, playerAccepted, targetAccepted)
+	DA.TRACE("TRADE_ACCEPT_UPDATE( "..tostring(playerAccepted)..", "..tostring(targetAccepted).." )")
 end
 
 --

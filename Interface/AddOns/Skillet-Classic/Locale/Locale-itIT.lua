@@ -62,6 +62,8 @@ L["CONFIRMQUEUECLEARDESC"] = "Use Alt-left-click instead of left-click to clear 
 L["CONFIRMQUEUECLEARNAME"] = "Use Alt-click to clear queue"
 L["Conflict with the addon TradeSkillMaster"] = "Conflict with the addon TradeSkillMaster"
 L["Copy"] = "Copy"
+--[[Translation missing --]]
+L["Cost"] = "Cost"
 L["Could not find bag space for"] = "Non trovo spazio nell borse per"
 L["craftable"] = "crabile"
 L["CRAFTBUTTONSDESC"] = "Include Craft buttons in frame"
@@ -121,6 +123,10 @@ L["Hide trivial"] = "Nascondi Banali"
 L["Hide uncraftable"] = "Nascondi non creabili"
 L["HIDEBLIZZARDFRAMEDESC"] = "Hide Blizzard TradeSkill frame when showing Skillet frame"
 L["HIDEBLIZZARDFRAMENAME"] = "Hide Blizzard Frame"
+--[[Translation missing --]]
+L["HIGHERVELLUMDESC"] = "Use a higher level of vellum when correct vellum is unavailable."
+--[[Translation missing --]]
+L["HIGHERVELLUMNAME"] = "Use higher vellum"
 L["Ignore"] = "Ignore"
 --[[Translation missing --]]
 L["IGNOREBANKEDREAGENTSDESC"] = "Ignore banked reagents when queuing craftable reagents"
@@ -167,6 +173,8 @@ L["Market"] = "Market"
 --[[Translation missing --]]
 L["Merchant"] = "Merchant"
 L["Merge items"] = "Unisce oggetti"
+--[[Translation missing --]]
+L["Most Sold"] = "Most Sold"
 L["Move Down"] = "Muovi verso il basso"
 L["Move to Bottom"] = "Muovi al fondo"
 L["Move to Top"] = "Muovi all'inizio"
@@ -185,11 +193,15 @@ L["Options"] = "Opzioni"
 L["Order by item"] = "Ordina per oggetto"
 L["Paste"] = "Paste"
 L["Pause"] = "Pausa"
+--[[Translation missing --]]
+L["Percent"] = "Percent"
 L["Plugins"] = "Plugins"
 L["Press"] = "Press"
 L["Press Okay to continue changing professions"] = "Press Okay to continue changing professions"
 L["Press Process to continue"] = "Press Process to continue"
 L["Process"] = "Processo"
+--[[Translation missing --]]
+L["Profit"] = "Profit"
 L["Purchased"] = "Comprato"
 L["Queue"] = "Coda"
 L["Queue All"] = "Accoda Tutti"
@@ -205,6 +217,10 @@ L["QUEUEGLYPHREAGENTSNAME"] = "Accoda reagenti per Glifi"
 L["QUEUEONLYVIEWDESC"] = "Show Standalone Queue Window only when set, show both Standalone Queue Window and Skillet Window when clear."
 L["QUEUEONLYVIEWNAME"] = "Only show Standalone Queue"
 L["Queues"] = "Code"
+--[[Translation missing --]]
+L["QUEUETOOLSDESC"] = "Add missing tools to shopping list"
+--[[Translation missing --]]
+L["QUEUETOOLSNAME"] = "Queue tools"
 L["reagent id seems corrupt!"] = "reagent id seems corrupt!"
 L["Reagents"] = "Reagenti"
 L["reagents in inventory"] = "reagenti in inventario"
@@ -223,6 +239,10 @@ L["RESETRECIPEFILTERDESC"] = "Reset Recipe Filter"
 L["Retrieve"] = "Recupera"
 --[[Translation missing --]]
 L["Right-Click for filtering options"] = "Right-Click for filtering options"
+--[[Translation missing --]]
+L["Sales for "] = "Sales for "
+--[[Translation missing --]]
+L["Sales Rate"] = "Sales Rate"
 L["Same faction"] = "Same faction"
 L["Save"] = "Salva"
 L["Scale"] = "Scala"
@@ -231,8 +251,6 @@ L["SCALETOOLTIPDESC"] = "Set scale of skill and reagent tooltips to match recipe
 L["SCALETOOLTIPNAME"] = "Scale All Tooltips"
 L["Scan completed"] = "Scansione Completa"
 L["Scanning tradeskill"] = "Scansionamento Professioni"
---[[Translation missing --]]
-L["Scroll of"] = "Scroll of"
 L["Search"] = "Search"
 L["Select All"] = "Select All"
 L["Select None"] = "Select None"
@@ -247,6 +265,10 @@ L["Shopping List"] = "Lista della Spesa"
 L["SHOPPINGCLEARDESC"] = "Pulisci la Lista della Spesa"
 L["SHOPPINGLISTDESC"] = "Mostra la lista della spesa"
 L["Show favorite recipes only. Click on a star on the left side of a recipe to set favorite."] = "Show favorite recipes only. Click on a star on the left side of a recipe to set favorite."
+--[[Translation missing --]]
+L["Show News"] = "Show News"
+--[[Translation missing --]]
+L["Show news when a new version is released"] = "Show news when a new version is released"
 L["SHOWBANKALTCOUNTSDESC"] = "Quando vengono calcolati e mostrati i conteggi per gli oggetti, includere quelli presenti in banca e su altri personaggi"
 L["SHOWBANKALTCOUNTSNAME"] = "Includi banca e alt"
 L["SHOWCRAFTCOUNTSDESC"] = "Mostra il numero di volte che puoi creare una ricetta, non il totale di oggetti producibili"
@@ -278,6 +300,8 @@ L["Start"] = "Inizia"
 --[[Translation missing --]]
 L["Stop"] = "Stop"
 L["SubClass"] = "SubClass"
+--[[Translation missing --]]
+L["Suffix"] = "Suffix"
 L["SUPPORTCRAFTINGDESC"] = "Include support for Crafting professions (requires a /reload)"
 L["SUPPORTCRAFTINGNAME"] = "Support Crafting"
 L["Supported Addons"] = "Addon Supportati"

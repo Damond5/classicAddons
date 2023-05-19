@@ -305,7 +305,7 @@ local function GetUnitSettings(unit, name)
 	group.args.raidTargetIndicator.args.yOffset = ACH:Range(L["Y-Offset"], nil, 6, { min = -100, max = 100, step = 1 })
 
 	if unit == 'PLAYER' then
-		group.args.classBarGroup = ACH:Group(L["Classbar"], nil, 13, nil, function(info) return E.db.nameplates.units[unit].classpower[info[#info]] end, function(info, value) E.db.nameplates.units[unit].classpower[info[#info]] = value NP:ConfigureAll() end)
+		group.args.classBarGroup = ACH:Group(L["Class Bar"], nil, 13, nil, function(info) return E.db.nameplates.units[unit].classpower[info[#info]] end, function(info, value) E.db.nameplates.units[unit].classpower[info[#info]] = value NP:ConfigureAll() end)
 		group.args.classBarGroup.args.enable = ACH:Toggle(L["Enable"], nil, 1)
 		group.args.classBarGroup.args.classColor = ACH:Toggle(L["Use Class Color"], nil, 2, nil, nil, nil, nil, nil, nil, not E.Retail and E.myclass == 'DEATHKNIGHT')
 		group.args.classBarGroup.args.width = ACH:Range(L["Width"], nil, 3, { min = minWidth, max = MaxWidth(unit), step = 1 })
@@ -388,7 +388,7 @@ E.Options.args.nameplates.args.generalGroup.args.spacer2 = ACH:Spacer(15, 'full'
 E.Options.args.nameplates.args.generalGroup.args.plateVisibility = ACH:Group(L["Visibility"], nil, 50)
 E.Options.args.nameplates.args.generalGroup.args.plateVisibility.args.showAll = ACH:Toggle(L["UNIT_NAMEPLATES_AUTOMODE"], L["This option controls the Blizzard setting for whether or not the Nameplates should be shown."], 0, nil, nil, 250, function(info) return E.db.nameplates.visibility[info[#info]] end, function(info, value) E.db.nameplates.visibility[info[#info]] = value NP:SetCVars() NP:ConfigureAll() end)
 E.Options.args.nameplates.args.generalGroup.args.plateVisibility.args.showAlways = ACH:Toggle(L["Always Show Player"], nil, 1, nil, nil, nil, function(info) return E.db.nameplates.units.PLAYER.visibility[info[#info]] end, function(info, value) E.db.nameplates.units.PLAYER.visibility[info[#info]] = value NP:SetCVars() NP:ConfigureAll() end)
-E.Options.args.nameplates.args.generalGroup.args.plateVisibility.args.cvars = ACH:MultiSelect(L["Blizzard CVars"], nil, 2, { nameplateOtherAtBase = L["Nameplate At Base"], nameplateShowOnlyNames = 'Show Only Names' }, nil, nil, function(_, key) return GetCVarBool(key) end, function(_, key, value) SetCVar(key, value and (key == 'nameplateOtherAtBase' and '2' or '1') or '0') end)
+E.Options.args.nameplates.args.generalGroup.args.plateVisibility.args.cvars = ACH:MultiSelect(L["Blizzard CVars"], nil, 2, { nameplateOtherAtBase = L["Nameplate At Base"], nameplateShowOnlyNames = L["Show Only Names"] }, nil, nil, function(_, key) return GetCVarBool(key) end, function(_, key, value) SetCVar(key, value and (key == 'nameplateOtherAtBase' and '2' or '1') or '0') end)
 E.Options.args.nameplates.args.generalGroup.args.plateVisibility.args.playerVisibility = ACH:Group(L["Player"], nil, 5, nil, function(info) return E.db.nameplates.units.PLAYER.visibility[info[#info]] end, function(info, value) E.db.nameplates.units.PLAYER.visibility[info[#info]] = value NP:SetCVars() NP:ConfigureAll() end)
 E.Options.args.nameplates.args.generalGroup.args.plateVisibility.args.playerVisibility.inline = true
 E.Options.args.nameplates.args.generalGroup.args.plateVisibility.args.playerVisibility.args.showInCombat = ACH:Toggle(L["Show In Combat"], nil, 1, nil, nil, nil, nil, nil, function() return not E.db.nameplates.units.PLAYER.enable or E.db.nameplates.units.PLAYER.visibility.showAlways end)
@@ -556,8 +556,11 @@ E.Options.args.nameplates.args.colorsGroup.args.COMBO_POINTS = ACH:Group(L["COMB
 E.Options.args.nameplates.args.colorsGroup.args.COMBO_POINTS.args.chargedComboPoint = ACH:Color(L["Charged Combo Point"], nil, 13, nil, nil, function(info) local t, d = E.db.nameplates.colors.classResources[info[#info]], P.nameplates.colors.classResources[info[#info]] return t.r, t.g, t.b, t.a, d.r, d.g, d.b end, function(info, r, g, b) local t = E.db.nameplates.colors.classResources[info[#info]] t.r, t.g, t.b = r, g, b NP:ConfigureAll() end, nil, not E.Retail)
 E.Options.args.nameplates.args.colorsGroup.args.COMBO_POINTS.inline = true
 
-for i = 1, 6 do
-	E.Options.args.nameplates.args.colorsGroup.args.CHI_POWER.args[''..i] = ACH:Color(L["CHI_POWER"]..' #'..i)
+for i = 1, 7 do
+	if i ~= 7 then
+		E.Options.args.nameplates.args.colorsGroup.args.CHI_POWER.args[''..i] = ACH:Color(L["CHI_POWER"]..' #'..i)
+	end
+
 	E.Options.args.nameplates.args.colorsGroup.args.COMBO_POINTS.args[''..i] = ACH:Color(L["COMBO_POINTS"]..' #'..i)
 end
 
@@ -571,8 +574,8 @@ do
 	end
 end
 
-E.Options.args.nameplates.args.colorsGroup.args.RUNES.args.runeBySpec = ACH:Toggle(E.NewSign..L["Color By Spec"], nil, 11, nil, nil, nil, function(info) return E.db.nameplates.colors[info[#info]] end, function(info, value) E.db.nameplates.colors[info[#info]] = value NP:ConfigureAll() end, nil, not E.Retail)
-E.Options.args.nameplates.args.colorsGroup.args.RUNES.args.chargingRunes = ACH:Toggle(E.NewSign..L["Charging Rune Color"], nil, 11, nil, nil, nil, function(info) return E.db.nameplates.colors[info[#info]] end, function(info, value) E.db.nameplates.colors[info[#info]] = value NP:ConfigureAll() end, nil, not E.Retail)
+E.Options.args.nameplates.args.colorsGroup.args.RUNES.args.runeBySpec = ACH:Toggle(L["Color By Spec"], nil, 11, nil, nil, nil, function(info) return E.db.nameplates.colors[info[#info]] end, function(info, value) E.db.nameplates.colors[info[#info]] = value NP:ConfigureAll() end, nil, not E.Retail)
+E.Options.args.nameplates.args.colorsGroup.args.RUNES.args.chargingRunes = ACH:Toggle(L["Charging Rune Color"], nil, 11, nil, nil, nil, function(info) return E.db.nameplates.colors[info[#info]] end, function(info, value) E.db.nameplates.colors[info[#info]] = value NP:ConfigureAll() end, nil, not E.Retail)
 
 E.Options.args.nameplates.args.playerGroup = GetUnitSettings('PLAYER', L["Player"])
 E.Options.args.nameplates.args.friendlyPlayerGroup = GetUnitSettings('FRIENDLY_PLAYER', L["FRIENDLY_PLAYER"])
@@ -593,7 +596,7 @@ for key, arrow in pairs(E.Media.Arrows) do
 	E.Options.args.nameplates.args.targetGroup.args.arrows.values[key] = E:TextureString(arrow, ':32:32')
 end
 
-E.Options.args.nameplates.args.targetGroup.args.classBarGroup = ACH:Group(L["Classbar"], nil, 13, nil, function(info) return E.db.nameplates.units.TARGET.classpower[info[#info]] end, function(info, value) E.db.nameplates.units.TARGET.classpower[info[#info]] = value NP:ConfigureAll() end)
+E.Options.args.nameplates.args.targetGroup.args.classBarGroup = ACH:Group(L["Class Bar"], nil, 13, nil, function(info) return E.db.nameplates.units.TARGET.classpower[info[#info]] end, function(info, value) E.db.nameplates.units.TARGET.classpower[info[#info]] = value NP:ConfigureAll() end)
 E.Options.args.nameplates.args.targetGroup.args.classBarGroup.inline = true
 E.Options.args.nameplates.args.targetGroup.args.classBarGroup.args.enable = ACH:Toggle(L["Enable"], nil, 1)
 E.Options.args.nameplates.args.targetGroup.args.classBarGroup.args.classColor = ACH:Toggle(L["Use Class Color"], nil, 2, nil, nil, nil, nil, nil, nil, not E.Retail and E.myclass == 'DEATHKNIGHT')

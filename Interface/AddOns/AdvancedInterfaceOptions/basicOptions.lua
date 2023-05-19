@@ -20,6 +20,13 @@ local function IsRetail()
   return WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
 end
 
+local function BlizzardOptionsPanel_UpdateCombatText()
+	-- Hack to call CombatText_UpdateDisplayedMessages which only exists if the Blizzard_CombatText AddOn is loaded
+	if CombatText_UpdateDisplayedMessages then
+		CombatText_UpdateDisplayedMessages()
+	end
+end
+
 AdvancedInterfaceOptionsSaved = {}
 local DBVersion = 3
 
@@ -466,6 +473,14 @@ secureToggle:SetPoint("TOPLEFT", IsClassic() and playerGuildTitles or fadeMap, "
 luaErrors:SetPoint("TOPLEFT", secureToggle, "BOTTOMLEFT", 0, -4)
 targetDebuffFilter:SetPoint("TOPLEFT", luaErrors, "BOTTOMLEFT", 0, -4)
 
+-- Insert functions exist as globals in Classic, and under C_Container on Retail 10.0.2
+local GetInsertItemsLeftToRight = GetInsertItemsLeftToRight or C_Container and C_Container.GetInsertItemsLeftToRight
+local SetInsertItemsLeftToRight = SetInsertItemsLeftToRight or C_Container and C_Container.SetInsertItemsLeftToRight
+
+-- Sorting functions do not exist in Classic, exist as globals up to 10.0.2, and are under C_Container in 10.0.2
+local GetSortBagsRightToLeft = GetSortBagsRightToLeft or C_Container and C_Container.GetSortBagsRightToLeft
+local SetSortBagsRightToLeft = SetSortBagsRightToLeft or C_Container and C_Container.SetSortBagsRightToLeft
+
 local reverseCleanupBags = GetSortBagsRightToLeft and SetSortBagsRightToLeft and newCheckbox(AIO, 'reverseCleanupBags',
 	function(self)
 		return GetSortBagsRightToLeft()
@@ -484,7 +499,7 @@ local lootLeftmostBag = GetInsertItemsLeftToRight and SetInsertItemsLeftToRight 
 	end
 )
 
-if reverseCleanupBags then
+if reverseCleanupBags and lootLeftmostBag then
     reverseCleanupBags:SetPoint("TOPLEFT", targetDebuffFilter, "BOTTOMLEFT", 0, -4)
     lootLeftmostBag:SetPoint("TOPLEFT", reverseCleanupBags, "BOTTOMLEFT", 0, -4)
     enableWoWMouse:SetPoint("TOPLEFT", lootLeftmostBag, "BOTTOMLEFT", 0, -4)

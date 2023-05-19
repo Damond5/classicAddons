@@ -66,6 +66,7 @@ function RCVotingFrame:OnEnable()
 	self:RegisterComm("RCLootCouncil")
 	self:RegisterBucketEvent({"UNIT_PHASE", "ZONE_CHANGED_NEW_AREA"}, 1, "Update") -- Update "Out of instance" text when any raid members change zone
 	self:RegisterMessage("RCLootStatusReceived", "UpdateLootStatus")
+	self:RegisterMessage("RCLootTableAdditionsReceived", "OnLootTableAdditionsReceived")
 	db = addon:Getdb()
 	--active = true
 	moreInfo = db.modules["RCVotingFrame"].moreInfo
@@ -336,26 +337,28 @@ function RCVotingFrame:OnCommReceived(prefix, serializedMsg, distri, sender)
 				self:Update()
 				self:UpdatePeopleToVote()
 
-			elseif command == "lt_add" and addon:UnitIsUnit(sender, addon.masterLooter) then
-				local oldLenght = #lootTable
-				for k,v in pairs(unpack(data)) do
-					lootTable[k] = v
-				end
-				-- Add the sessions in order to avoid messing with SessionButtons
-				for i = oldLenght + 1, #lootTable do
-					self:SetupSession(i, lootTable[i])
-					if addon.isMasterLooter and db.autoAddRolls then
-						self:DoRandomRolls(i)
-					end
-				end
-				self:SwitchSession(session)
-
 			elseif command == "not_tradeable" or command == "rejected_trade" then
 				self:AddNonTradeable(unpack(data), addon:UnitName(sender), command)
 
 			end
 		end
 	end
+end
+
+function RCVotingFrame:OnLootTableAdditionsReceived (_, lt)
+	addon:Print("lt_additions")
+	local oldLenght = #lootTable
+	for k,v in pairs(lt) do
+		lootTable[k] = v
+	end
+	-- Add the sessions in order to avoid messing with SessionButtons
+	for i = oldLenght + 1, #lootTable do
+		self:SetupSession(i, lootTable[i])
+		if addon.isMasterLooter and db.autoAddRolls then
+			self:DoRandomRolls(i)
+		end
+	end
+	self:SwitchSession(session)
 end
 
 -- Getter/Setter for candidate data
@@ -673,8 +676,10 @@ function RCVotingFrame:UpdateMoreInfo(row, data)
 		local r,g,b
 		tip:AddLine(L["Latest item(s) won"])
 		for _, v in ipairs(moreInfoData[name]) do -- extract latest awarded items
-			if v[3] then r,g,b = unpack(v[3],1,3) end
-			tip:AddDoubleLine(v[1], v[2], nil,nil,nil, r or 1, g or 1, b or 1)
+			local _, itemType, _, location, _, classID = GetItemInfoInstant(v[1])
+			local locationText = getglobal(location) or classID == Enum.ItemClass.Miscellaneous and L["Armor Token"] or itemType
+			if v[3] then r, g, b = unpack(v[3], 1, 3) end
+			tip:AddDoubleLine(locationText .. " " .. v[1], v[2], 1, 1, 1, r or 1, g or 1, b or 1)
 		end
 		tip:AddLine(" ") -- spacer
 		tip:AddLine(_G.TOTAL)
@@ -1037,14 +1042,20 @@ function RCVotingFrame:UpdateSessionButton(i, texture, link, awarded)
 			btn:SetPoint("TOP", sessionButtons[i-1], "BOTTOM", 0, -2)
 		end
 		btn:SetScript("Onclick", function() RCVotingFrame:SwitchSession(i); end)
+		btn:SetScript("Onclick", function() RCVotingFrame:SwitchSession(i); end)
+		btn.check = btn:CreateTexture("RCSessionButton" .. i .. "CheckMark", "OVERLAY")
+		btn.check:SetTexture("interface/raidframe/readycheck-ready")
+		btn.check:SetAllPoints()
 	end
 	-- then update it
 	btn:SetNormalTexture(texture or "Interface\\InventoryItems\\WoWUnknownItem01")
+	btn.check:Hide()
 	local lines = { format(L["Click to switch to 'item'"], link) }
 	if i == session then
 		btn:SetBorderColor("yellow")
 	elseif awarded then
 		btn:SetBorderColor("green")
+		btn.check:Show()
 		tinsert(lines, L["This item has been awarded"])
 	else
 		btn:SetBorderColor("white") -- white

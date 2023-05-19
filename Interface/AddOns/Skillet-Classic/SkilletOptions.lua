@@ -21,12 +21,7 @@ local L = Skillet.L
 local isRetail = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
 local isClassic = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
 local isBCC = WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC
-local isWrath = Skillet.build == "Wrath"
-
---
--- All the options that we allow the user to control.
---
-local MAJOR_VERSION = GetAddOnMetadata("Skillet-Classic", "Version");
+local isWrath = WOW_PROJECT_ID == WOW_PROJECT_WRATH_CLASSIC
 
 --
 -- All the options that we allow the user to control.
@@ -44,7 +39,7 @@ Skillet.options =
 			args = {
 				header = {
 					type = "header",
-					name = L["Skillet Trade Skills"].." "..MAJOR_VERSION,
+					name = L["Skillet Trade Skills"].." "..Skillet.version,
 					order = 11
 				},
 				vendor_buy_button = {
@@ -151,7 +146,7 @@ Skillet.options =
 					set = function(self,value)
 						Skillet.db.profile.link_craftable_reagents = value
 					end,
-					width = "full",
+					width = 1.5,
 					order = 19
 				},
 				queue_craftable_reagents = {
@@ -167,6 +162,19 @@ Skillet.options =
 					width = 1.5,
 					order = 20
 				},
+				queue_tools = {
+					type = "toggle",
+					name = L["QUEUETOOLSNAME"],
+					desc = L["QUEUETOOLSDESC"],
+					get = function()
+						return Skillet.db.profile.queue_tools
+					end,
+					set = function(self,value)
+						Skillet.db.profile.queue_tools = value
+					end,
+					width = 1.5,
+					order = 21
+				},
 				ignore_banked_reagents = {
 					type = "toggle",
 					name = L["IGNOREBANKEDREAGENTSNAME"],
@@ -178,7 +186,7 @@ Skillet.options =
 						Skillet.db.profile.ignore_banked_reagents = value
 					end,
 					width = 1.5,
-					order = 21
+					order = 22
 				},
 --[[
 				queue_glyph_reagents = {
@@ -360,8 +368,22 @@ Skillet.options =
 					set = function(self,value)
 						Skillet.db.profile.enchant_scrolls = value
 					end,
-					width = 1.5,
+					width = 1.0,
 					order = 35
+				},
+				use_higher_vellum = {
+					hidden = isClassic,
+					type = "toggle",
+					name = L["HIGHERVELLUMNAME"],
+					desc = L["HIGHERVELLUMDESC"],
+					get = function()
+						return Skillet.db.profile.use_higher_vellum
+					end,
+					set = function(self,value)
+						Skillet.db.profile.use_higher_vellum = value
+					end,
+					width = 1.0,
+					order = 36
 				},
 				include_tradebuttons = {
 					type = "toggle",
@@ -374,7 +396,7 @@ Skillet.options =
 						Skillet.db.profile.include_tradebuttons = value
 					end,
 					width = "full",
-					order = 36
+					order = 37
 				},
 				search_includes_reagents = {
 					type = "toggle",
@@ -388,7 +410,7 @@ Skillet.options =
 						Skillet.data.tooltipCache = {}
 					end,
 					width = "full",
-					order = 37
+					order = 38
 				},
 				use_guildbank_as_alt = {
 					hidden = isClassic,
@@ -403,7 +425,7 @@ Skillet.options =
 						Skillet:UpdateTradeSkillWindow()
 					end,
 					width = 1.5,
-					order = 38
+					order = 39
 				},
 				use_bank_as_alt = {
 					hidden = isClassic,
@@ -418,7 +440,7 @@ Skillet.options =
 						Skillet:UpdateTradeSkillWindow()
 					end,
 					width = 1.5,
-					order = 39
+					order = 40
 				},
 			}
 		},
@@ -991,6 +1013,20 @@ Skillet.options =
 			end,
 			order = 78
 		},
+		news = {
+			type = 'execute',
+			name = "Display news",
+			desc = "Display the news frame",
+			func = function()
+				if not (UnitAffectingCombat("player")) then
+					Skillet.NewsGUI:Toggle()
+				else
+					DA.DEBUG(0,"|cff8888ffSkillet|r: Combat lockdown restriction." ..
+												  " Leave combat and try again.")
+				end
+			end,
+			order = 80
+		},
 
 --
 -- Commands to manipulate the state of debugging code flags
@@ -1113,6 +1149,19 @@ Skillet.options =
 			set = function(self,value)
 				Skillet.db.profile.TraceLog = value
 				Skillet.TraceLog = value
+			end,
+			order = 88
+		},
+		TraceLog2 = {
+			type = "toggle",
+			name = "TraceLog2",
+			desc = "Option for debugging",
+			get = function()
+				return Skillet.db.profile.TraceLog2
+			end,
+			set = function(self,value)
+				Skillet.db.profile.TraceLog2 = value
+				Skillet.TraceLog2 = value
 			end,
 			order = 88
 		},
@@ -1318,6 +1367,101 @@ Skillet.options =
 				print("CraftWait= "..tostring(Skillet.db.realm.craft_wait))
 			end,
 			order = 103
+		},
+--
+-- commands to manage the custom reagent price table
+--
+		customadd = {
+			type = 'input',
+			name = "customadd",
+			desc = "Add a custom price for a reagent (customadd id|link,price)",
+			get = function()
+				return value
+			end,
+			set = function(self,value)
+				if not (UnitAffectingCombat("player")) then
+					if value then
+						local item, id, price, name, link
+						local server = Skillet.data.server or 0
+						DA.DEBUG(0,"value= "..value)
+						item, price = string.split(",",value)
+						if string.find(item,"|H") then
+							id = Skillet:GetItemIDFromLink(item)
+						else
+							id = tonumber(item)
+						end
+						name, link = GetItemInfo(id)
+						price = tonumber(price)
+						DA.DEBUG(0,"id= "..tostring(id)..", name= "..tostring(name)..", price= "..tostring(price)..", link= "..tostring(link))
+						Skillet.db.global.customPrice[server][id] = { ["name"] = name, ["value"] = price }
+						end
+				else
+					DA.DEBUG(0,"|cff8888ffSkillet|r: Combat lockdown restriction." ..
+												  " Leave combat and try again.")
+				end
+			end,
+			order = 105
+		},
+		customdel = {
+			type = 'input',
+			name = "customdel",
+			desc = "Delete a custom reagent (customdel id|link)",
+			get = function()
+				return value
+			end,
+			set = function(self,value)
+				if not (UnitAffectingCombat("player")) then
+					if value then
+						local id
+						local server = Skillet.data.server or 0
+						DA.DEBUG(0,"value= "..value)
+						if string.find(value,"|H") then
+							id = Skillet:GetItemIDFromLink(value)
+						else
+							id = tonumber(value)
+						end
+						Skillet.db.global.customPrice[server][id] = nil
+						end
+				else
+					DA.DEBUG(0,"|cff8888ffSkillet|r: Combat lockdown restriction." ..
+												  " Leave combat and try again.")
+				end
+			end,
+			order = 106
+		},
+		customshow = {
+			type = 'execute',
+			name = "customshow",
+			desc = "Print the custom reagent price table",
+			func = function()
+				local server = Skillet.data.server or 0
+				for id,entry in pairs(Skillet.db.global.customPrice[server]) do
+					print(tostring(entry.name)..", "..Skillet:FormatMoneyFull(entry.value,true))
+				end
+			end,
+			order = 107
+		},
+		customdump = {
+			type = 'execute',
+			name = "customdump",
+			desc = "Print the custom reagent price table",
+			func = function()
+				local server = Skillet.data.server or 0
+				for id,entry in pairs(Skillet.db.global.customPrice[server]) do
+					print("id= "..tostring(id)..", name= "..tostring(entry.name)..", value= "..tostring(entry.value))
+				end
+			end,
+			order = 108
+		},
+		customclear = {
+			type = 'execute',
+			name = "customclear",
+			desc = "Clear the custom reagent price table",
+			func = function()
+				local server = Skillet.data.server or 0
+				Skillet.db.global.customPrice[server] = {}
+			end,
+			order = 109
 		},
 
 --

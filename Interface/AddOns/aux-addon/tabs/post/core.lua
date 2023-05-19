@@ -246,7 +246,7 @@ function post_auction()
             ClearCursor()
             ClickAuctionSellItemButton()
             ClearCursor()
-            PickupContainerItem(unpack(slot))
+            C_Container.PickupContainerItem(unpack(slot))
             ClickAuctionSellItemButton()
             ClearCursor()
             break
@@ -307,6 +307,10 @@ function validate_parameters()
         return
     end
     if deposit_amount() > GetMoney() then
+        post_button:Disable()
+        return
+    end
+    if not CanSendAuctionQuery() then
         post_button:Disable()
         return
     end
@@ -399,7 +403,7 @@ function unit_vendor_price(item_key)
             ClearCursor()
             ClickAuctionSellItemButton()
             ClearCursor()
-            PickupContainerItem(unpack(slot))
+            C_Container.PickupContainerItem(unpack(slot))
             ClickAuctionSellItemButton()
             local auction_sell_item = info.auction_sell_item()
             ClearCursor()
@@ -505,6 +509,7 @@ function refresh_entries()
 
 		scan.start{
             type = 'list',
+            sort_type = 'unitprice',
             ignore_owner = true,
 			queries = {query},
             on_scan_start = function()
@@ -513,19 +518,24 @@ function refresh_entries()
 			on_page_loaded = function(page, total_pages)
                 aux.status_bar:update_status(page / total_pages, 0)
 			end,
+            on_page_scanned = function()
+                bid_records[item_key] = bid_records[item_key] or {}
+                buyout_records[item_key] = buyout_records[item_key] or {}
+                refresh = true
+                if not aux.account_data.post_full_scan and next(buyout_records[item_key]) then
+                    scan.abort()
+                    aux.coro_wait()
+                end
+            end,
 			on_auction = function(auction_record)
 				if auction_record.item_key == item_key then
                     record_auction(auction_record)
 				end
 			end,
 			on_abort = function()
-				bid_records[item_key], buyout_records[item_key] = nil, nil
                 aux.status_bar:update_status(1, 1)
 			end,
 			on_complete = function()
-				bid_records[item_key] = bid_records[item_key] or {}
-				buyout_records[item_key] = buyout_records[item_key] or {}
-                refresh = true
                 aux.status_bar:update_status(1, 1)
             end,
 		}

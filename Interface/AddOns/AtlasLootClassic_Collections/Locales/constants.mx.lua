@@ -12,6 +12,8 @@ AL["Abyssal Lords"] = "Lords abisales"
 AL["Abyssal Templars"] = "Templarios abisales"
 AL["Ahune"] = "Ahune"
 --[[Translation missing --]]
+--[[ AL["Apothecary Hummel"] = "Apothecary Hummel"--]] 
+--[[Translation missing --]]
 --[[ AL["Argent Tournament"] = "Argent Tournament"--]] 
 AL["Avalanchion"] = "Avalanchion"
 AL["Azure Templar"] = "Templario azur"
@@ -29,6 +31,8 @@ AL["Brightly Colored Egg"] = "Huevo de colores vivos"
 --[[ AL["Card Game Tabards"] = "Card Game Tabards"--]] 
 AL["Childrens Week"] = "Semana de los Niños"
 AL["Crimson Templar"] = "Templario Carmesí"
+--[[Translation missing --]]
+--[[ AL["Day of the Dead"] = "Day of the Dead"--]] 
 AL["Drops"] = "Despoja"
 AL["Dungeon Set %s"] = "Conjunto de Mazmorra %s"
 AL["Dungeon Sets"] = "Conjuntos de Mazmorra"
@@ -56,8 +60,6 @@ AL["Gift of Adoration"] = "Ofrenda de adoración"
 AL["Gurubashi Arena"] = "Arena Gurubashi"
 AL["Hallow's End"] = "Halloween"
 AL["Harvest Festival"] = "Festival de la Cosecha"
---[[Translation missing --]]
---[[ AL["Heirloom"] = "Heirloom"--]] 
 AL["High Marshal Whirlaxis"] = "Alto mariscal Eje Torbellino"
 AL["Hoary Templar"] = "Templario vetusto"
 AL["Idols"] = "Ídolos"
@@ -72,13 +74,13 @@ AL["Masks"] = "Máscaras"
 AL["Midsummer Festival"] = "Festival de Fuego del Solsticio de Verano"
 AL["Noblegarden"] = "Jardín Noble"
 AL["One-Handed Weapons"] = "Armas de una mano"
+--[[Translation missing --]]
+--[[ AL["Pilgrim's Bounty"] = "Pilgrim's Bounty"--]] 
 AL["Prince Skaldrenox"] = "Príncipe Skaldrenox"
 AL["Princess Tempestria"] = "Princesa Tempestria"
 AL["Ranged Weapons"] = "Armas a distancia"
 AL["Rare Fish"] = "Pescados raros"
 AL["Rare Fish Rewards"] = "Recompensas raras de pesca"
---[[Translation missing --]]
---[[ AL["Recipe"] = "Recipe"--]] 
 AL["Scarlet Monastery - Graveyard"] = "Monasterio Escarlata - Cementerio"
 AL["Scourge Invasion"] = "Invasión de la Plaga"
 AL["Silithus Abyssal"] = "Abisal Silithus"

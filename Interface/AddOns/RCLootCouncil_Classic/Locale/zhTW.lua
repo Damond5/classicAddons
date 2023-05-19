@@ -23,6 +23,12 @@ L["Instance"] = "Instance"
 --[[Translation missing --]]
 L["leaderUsage_desc"] = "Use the same setting when entering an instance as the leader?"
 --[[Translation missing --]]
+L["opt_advancedAutoPass_desc"] = "Check each slot to always auto pass items of that type."
+--[[Translation missing --]]
+L["opt_advancedAutoPass_name"] = "Advanced Auto Pass"
+--[[Translation missing --]]
+L["opt_advancedAutoPassSlot_desc"] = "Check to always auto pass %s items."
+--[[Translation missing --]]
 L["opt_autoAwardRepItems_desc"] = "Enables auto awarding of rep items such as Coins and Bijous in Zul'Gurub."
 --[[Translation missing --]]
 L["opt_autoAwardRepItemsMode_desc"] = "Choose the mode to award rep items. Personal works like normal auto awards, and round robin evenly distributes items to all players."

@@ -19,6 +19,12 @@ L["ALWAYS_AUTO_AWARD_OPTION_LIST_NONE"] = "No items in list."
 L["Auto Award Reputation Items"] = "Авто-вручение предметов на репутацию"
 L["Instance"] = "Подземелье"
 L["leaderUsage_desc"] = "Использовать те же настройки при входе в подземелье в качестве лидера?"
+--[[Translation missing --]]
+L["opt_advancedAutoPass_desc"] = "Check each slot to always auto pass items of that type."
+--[[Translation missing --]]
+L["opt_advancedAutoPass_name"] = "Advanced Auto Pass"
+--[[Translation missing --]]
+L["opt_advancedAutoPassSlot_desc"] = "Check to always auto pass %s items."
 L["opt_autoAwardRepItems_desc"] = "Включает автоматическое вручение таких предметов на репутацию, как Монеты и Брелоки в Зул'Гурубе."
 L["opt_autoAwardRepItemsMode_desc"] = "Выберите режим для распределения предметов на репутацию. По персонам работает как обычные автоматические награды, а система по кругу равномерно распределяет предметы среди всех игроков."
 L["opt_autoAwardRepItemsMode_personal"] = " По персонам"

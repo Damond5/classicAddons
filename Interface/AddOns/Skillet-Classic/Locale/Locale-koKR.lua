@@ -66,6 +66,8 @@ L["CONFIRMQUEUECLEARDESC"] = "예약을 지우기 위해 좌클릭 대신 Alt-�
 L["CONFIRMQUEUECLEARNAME"] = "예약을 지우기 위해 Alt-클릭 사용"
 L["Conflict with the addon TradeSkillMaster"] = "TradeSkillMaster 애드온과 충돌이 있습니다."
 L["Copy"] = "복사"
+--[[Translation missing --]]
+L["Cost"] = "Cost"
 L["Could not find bag space for"] = "가방에 공간이 없습니다."
 L["craftable"] = "제작 가능"
 L["CRAFTBUTTONSDESC"] = "프레임에 전문 제작 버튼을 표시합니다."
@@ -124,6 +126,10 @@ L["Hide trivial"] = "회색 제작템 숨기기"
 L["Hide uncraftable"] = "제작할 수 없는 아이템 숨기기"
 L["HIDEBLIZZARDFRAMEDESC"] = "Skillet 창으로 보는중이면 Blizzard 전문 기술 창을 숨깁니다."
 L["HIDEBLIZZARDFRAMENAME"] = "Blizzard 창 숨김"
+--[[Translation missing --]]
+L["HIGHERVELLUMDESC"] = "Use a higher level of vellum when correct vellum is unavailable."
+--[[Translation missing --]]
+L["HIGHERVELLUMNAME"] = "Use higher vellum"
 L["Ignore"] = "무시"
 --[[Translation missing --]]
 L["IGNOREBANKEDREAGENTSDESC"] = "Ignore banked reagents when queuing craftable reagents"
@@ -170,6 +176,8 @@ L["Market"] = "시장가"
 --[[Translation missing --]]
 L["Merchant"] = "Merchant"
 L["Merge items"] = "아이템 합침"
+--[[Translation missing --]]
+L["Most Sold"] = "Most Sold"
 L["Move Down"] = "아래로 이동"
 L["Move to Bottom"] = "맨 아래로 이동"
 L["Move to Top"] = "맨 위로 이동"
@@ -188,11 +196,15 @@ L["Options"] = "설정"
 L["Order by item"] = "아이템별 정렬"
 L["Paste"] = "붙여넣기"
 L["Pause"] = "중지"
+--[[Translation missing --]]
+L["Percent"] = "Percent"
 L["Plugins"] = "플러그인"
 L["Press"] = "전문기술을 계속 변경하려면"
 L["Press Okay to continue changing professions"] = "전문기술을 계속 변경하려면 확인을 누르세요."
 L["Press Process to continue"] = "계속하려면 진행을 누르세요."
 L["Process"] = "진행"
+--[[Translation missing --]]
+L["Profit"] = "Profit"
 L["Purchased"] = "구매"
 L["Queue"] = "예약"
 L["Queue All"] = "전부 예약"
@@ -208,6 +220,10 @@ L["QUEUEGLYPHREAGENTSNAME"] = "문양 재료 예약"
 L["QUEUEONLYVIEWDESC"] = "체크 시 예약 창만 표시하고, 해제 시 예약 창과 Skillet 창을 모두 보여줍니다."
 L["QUEUEONLYVIEWNAME"] = "예약 창만 표시"
 L["Queues"] = "예약"
+--[[Translation missing --]]
+L["QUEUETOOLSDESC"] = "Add missing tools to shopping list"
+--[[Translation missing --]]
+L["QUEUETOOLSNAME"] = "Queue tools"
 L["reagent id seems corrupt!"] = "재료 ID가 손상된 것 같습니다!"
 L["Reagents"] = "재료"
 L["reagents in inventory"] = "가방에 있는 재료로 제작"
@@ -226,6 +242,10 @@ L["RESETRECIPEFILTERDESC"] = "레시피 필터 초기화"
 L["Retrieve"] = "회수"
 --[[Translation missing --]]
 L["Right-Click for filtering options"] = "Right-Click for filtering options"
+--[[Translation missing --]]
+L["Sales for "] = "Sales for "
+--[[Translation missing --]]
+L["Sales Rate"] = "Sales Rate"
 L["Same faction"] = "같은 진영"
 L["Save"] = "저장"
 L["Scale"] = "크기"
@@ -234,8 +254,6 @@ L["SCALETOOLTIPDESC"] = "레시피 툴팁(전역 UI 크기)과 일치하도록 �
 L["SCALETOOLTIPNAME"] = "모든 툴팁 크기"
 L["Scan completed"] = "조사가 완료되었습니다."
 L["Scanning tradeskill"] = "전문기술 조사"
---[[Translation missing --]]
-L["Scroll of"] = "Scroll of"
 L["Search"] = "검색"
 L["Select All"] = "모두 선택"
 L["Select None"] = "선택 안 함"
@@ -250,6 +268,10 @@ L["Shopping List"] = "쇼핑 목록"
 L["SHOPPINGCLEARDESC"] = "쇼핑 목록을 비웁니다."
 L["SHOPPINGLISTDESC"] = "쇼핑 목록을 표시합니다."
 L["Show favorite recipes only. Click on a star on the left side of a recipe to set favorite."] = "즐겨찾는 레시피만 표시합니다. 즐겨찾기로 설정하려면 레시피 왼쪽 별을 클릭하세요."
+--[[Translation missing --]]
+L["Show News"] = "Show News"
+--[[Translation missing --]]
+L["Show news when a new version is released"] = "Show news when a new version is released"
 L["SHOWBANKALTCOUNTSDESC"] = "제작 가능한 아이템 수를 계산하고 보여줄 때, 당신의 은행과 다른 캐릭터의 아이템도 포함합니다."
 L["SHOWBANKALTCOUNTSNAME"] = "은행과 다른 캐릭터의 내용물도 포함"
 L["SHOWCRAFTCOUNTSDESC"] = "제작 가능한 총 아이템 수가 아닌, 제작 가능 횟수를 표시합니다."
@@ -281,6 +303,8 @@ L["Start"] = "시작"
 --[[Translation missing --]]
 L["Stop"] = "Stop"
 L["SubClass"] = "직업용 아이템"
+--[[Translation missing --]]
+L["Suffix"] = "Suffix"
 L["SUPPORTCRAFTINGDESC"] = "전문기술 제작에 대한 지원을 포함합니다. (/reload가 필요합니다.)"
 L["SUPPORTCRAFTINGNAME"] = "제작 지원"
 L["Supported Addons"] = "지원가능 애드온"

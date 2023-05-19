@@ -52,7 +52,7 @@ function Skillet:InventoryReagentCraftability(reagentID, playerOverride)
 					numCraftable = math.min(numCraftable, math.floor(numReagentCraftable/childReagent.numNeeded))
 					--DA.DEBUG(2,"numCraftable="..numCraftable)
 				end
-				numReagentsCrafted = numReagentsCrafted + numCraftable * childRecipe.numMade
+				numReagentsCrafted = numReagentsCrafted + numCraftable * (childRecipe.numMade or 1)
 				--DA.DEBUG(2,"numReagentsCrafted="..numReagentsCrafted)
 			end
 		end
@@ -128,7 +128,7 @@ function Skillet:InventorySkillIterations(tradeID, skillIndex)
 					numCraftAlts = math.min(numCraftAlts, math.floor(reagentAvailableAlts/numNeeded))
 				end
 			else								-- no data means no craftability
-				DA.CHAT(L["reagent id seems corrupt!"])
+				DA.MARK3(L["reagent id seems corrupt!"])
 				numCraft = 0
 				numCraftable = 0
 				numCraftVendor = 0

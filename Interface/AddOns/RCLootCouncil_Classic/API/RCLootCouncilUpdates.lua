@@ -27,6 +27,10 @@ addon.defaults.profile.usage = {
    state = "ask_ml"
 }
 
+addon.defaults.profile.autoPassSlot = {
+   ["*"] = false
+}
+
 -- Rep Items defaults:
 addon.defaults.profile.autoAwardRepItems = false
 addon.defaults.profile.autoAwardRepItemsReason = 1
@@ -75,18 +79,36 @@ function addon:RegisterComms ()
    -- Handled in Core/Module.lua
 end
 
+--- Returns tests items either for Classic or WOTLK depending on current expansion.
+--- @param trinkets? boolean Trinket items?
+--- @return int[] items Array of item ids
+local function getTestItems(trinkets)
+   if Classic:IsClassicEra() then
+      -- Classic
+      return trinkets
+         and { 19406,17064,18820,19395,19289 }
+         or {
+         17076,12590,14555,11684,22691,871, -- Weapons
+         12640,14551,14153,12757, -- Armor
+         18821,19140,19148,1980,942,18813,13143 -- Rings
+         }
+   else
+      -- WOTLK
+      return trinkets
+         and {40684,44253, 40255,40682, 37835, 40256,40432,39229}
+         or {41610, 41386,41609,42643,44935,41387,43481,
+         40696,44664,42102,37361,43565,42654,34388,40207,
+         39492, 37642, 42113, 40689, 39497, 42551
+         }
+   end
+end
+
 -- fullTest is used with Dungeon Journal, and thus is ignored
-function addon:Test (num, fullTest, trinketTest)
+function addon:Test(num, fullTest, trinketTest)
    self:Debug("Test", num, fullTest, trinketTest)
    num = num or 3
-   local testItems = {
-      17076,12590,14555,11684,22691,871, -- Weapons
-      12640,14551,14153,12757, -- Armor
-      18821,19140,19148,1980,942,18813,13143 -- Rings
-   }
-   local trinkets = {
-      19406,17064,18820,19395,19289, -- Trinkets
-   }
+   local testItems = getTestItems()
+   local trinkets = getTestItems(true)
 
    if not trinketTest then
 		for _, t in ipairs(trinkets) do
@@ -106,9 +128,16 @@ function addon:Test (num, fullTest, trinketTest)
 	self.isMasterLooter, self.masterLooter = self:GetML()
 	-- We must be in a group and not the ML
 	if not self.isMasterLooter then
-		self:Print(L.error_test_as_non_leader)
-		self.testMode = false
-		return
+      -- If we're the group leader we can still test.
+      -- We might not be marked as ML due to certain settings - we ignore those when testing.
+      if UnitIsGroupLeader("player") then
+         self.isMasterLooter = true
+         self.masterLooter = self.playerName
+      else
+         self:Print(L.error_test_as_non_leader)
+         self.testMode = false
+         return
+      end
 	end
 	-- Call ML module and let it handle the rest
 	self:CallModule("masterlooter")
@@ -184,13 +213,12 @@ function addon:NewMLCheck()
    end
    if self:UnitIsUnit(old_ml, "player") and not self.isMasterLooter then
       -- We were ML, but no longer, so disable masterlooter module
-      self:GetActiveModule("masterlooter"):Disable()
+      self:StopHandleLoot()
    end
    if self:UnitIsUnit(old_ml, self.masterLooter) and old_lm == self.lootMethod then
       return self:DebugLog("NewMLCheck", "No ML Change") -- no change
    end
-   local db = self:Getdb()
-   if db.usage.never then return self:DebugLog("NewMLCheck", "db.usage.never") end
+
    if self.masterLooter == nil then return end -- We're not using ML
    -- At this point we know the ML has changed, so we can wipe the council
    self:Debug("NewMLCheck", "Resetting council as we have a new ML!")
@@ -199,19 +227,10 @@ function addon:NewMLCheck()
    self:ScheduleTimer("Timer", 15, "MLdb_check")
    if not self.isMasterLooter and self.masterLooter then return self:Debug("Some else is ML") end -- Someone else has become ML
 
-   -- Check if we can use in party
-   if not IsInRaid() and db.onlyUseInRaids then return self:Debug("Not in raid group") end
-
    -- Don't do popups if we're already handling loot
 	if self.handleLoot then return self:Debug("Already handling loot") end
 
-	-- Don't do pop-ups in pvp
-	local _, type = IsInInstance()
-	if type == "arena" or type == "pvp" then return self:Debug("PVP isntance") end
-
-   -- Check for group loot
-   if addon.lootMethod == "group" and not db.useWithGroupLoot then return self:Debug("lootMethod == group and useWithGroupLoot == false") end
-
+   local db = self:Getdb()
    -- We are ML and shouldn't ask the player for usage
    if self.isMasterLooter and db.usage.ml then -- addon should auto start
       self:StartHandleLoot()
@@ -244,10 +263,13 @@ function addon:GetML()
    self:DebugLog("GetML()")
    local lootMethod, mlPartyID, mlRaidID = GetLootMethod()
    self:Debug("LootMethod = ", lootMethod)
+
    if GetNumGroupMembers() == 0 and (self.testMode or self.nnp) then -- always the player when testing alone
       self:ScheduleTimer("Timer", 5, "MLdb_check")
       return true, self.playerName
    end
+
+   -- Otherwise figure it out based on loot method:
    if lootMethod == "master" then
       local name;
       if mlRaidID then -- Someone in raid
@@ -258,8 +280,8 @@ function addon:GetML()
          name = self:UnitName("party"..mlPartyID)
       end
       self:Debug("MasterLooter = ", name)
-      return IsMasterLooter(), name
-   elseif lootMethod == "group" then
+      return IsMasterLooter() and self:IsPlayerML(), name
+   else
       -- Set the Group leader as the ML
 	   local name
       for i=1, GetNumGroupMembers() or 0 do
@@ -271,11 +293,33 @@ function addon:GetML()
             name = self:UnitName(name2)
          end
       end
-      if name then
-         return UnitIsGroupLeader("player"), name
-      end
+      return UnitIsGroupLeader("player") and self:IsPlayerML(), name
    end
-   return false, nil;
+end
+
+function addon:IsPlayerML()
+   local lootMethod = GetLootMethod()
+   -- Can't be ML in pvp
+   local _, type = IsInInstance()
+   if type == "arena" or type == "pvp" then
+      self:Debug("PVP instance")
+      return false
+   end
+   local db = self:Getdb()
+   -- We shouldn't be ML if settings doesn't allow us to
+   if db.usage.never then
+      self:DebugLog("GetML", "db.usage.never")
+      return false
+
+   elseif not IsInRaid() and db.onlyUseInRaids then
+      self:Debug("Not in raid group")
+      return false
+   -- Are we even allowed to use group loot?
+   elseif lootMethod == "group" and not db.useWithGroupLoot then
+      self:Debug("useWithGroupLoot == false")
+      return false
+   end
+   return true
 end
 
 function addon:StartHandleLoot()
@@ -312,12 +356,19 @@ end
 ----------------------------------------------
 -- Private helper functions
 ----------------------------------------------
+
+--- @param id? int InvSlotId
+--- @returns True if inventory slot is tabard or shirt
+local function skipInventorySlot(id)
+   return not id or id == INVSLOT_TABARD or id == INVSLOT_BODY
+end
+
 --- Recreates functionality of GetAverageItemLevel()
 function private.GetAverageItemLevel()
    local sum, count = 0, 0
    for i=_G.INVSLOT_FIRST_EQUIPPED, _G.INVSLOT_LAST_EQUIPPED do
       local iLink = _G.GetInventoryItemLink("player", i)
-      if iLink and iLink ~= "" then
+      if iLink and iLink ~= "" and not skipInventorySlot(i) then
          local ilvl = select(4, _G.GetItemInfo(iLink)) or 0
          sum = sum + ilvl
          count = count + 1

@@ -19,6 +19,8 @@ AL["Amnennar the Coldbringer"] = "Amnennar el Gélido"
 AL["Ancient Stone Keeper"] = "Vigilante de piedra anciano"
 AL["Antu'sul"] = "Antu'sul"
 AL["Anub'shiah"] = "Anub'shiah"
+--[[Translation missing --]]
+--[[ AL["Apothecary Hummel <Crown Chemical Co.>"] = "Apothecary Hummel <Crown Chemical Co.>"--]] 
 AL["Arcanist Doan"] = "Arcanista Doan"
 AL["Archaedas"] = "Archaedas"
 AL["Archivist Galford"] = "Archivista Galford"
@@ -487,3 +489,5 @@ AL["Zul'jin"] = "Zul'jin"
 
 if AtlasLoot:GameVersion_LT(AtlasLoot.WRATH_VERSION_NUM) then return end
 -- DungeonsAndRaidsWrath
+AL["%s Attempts left"] = "Quedan %s intentos"
+AL["Achievements"] = "Logros"

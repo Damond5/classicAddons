@@ -2,7 +2,7 @@ local addonName,addonTable = ...
 local isRetail = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
 local isClassic = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
 local isBCC = WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC
-local isWrath = Skillet.build == "Wrath"
+local isWrath = WOW_PROJECT_ID == WOW_PROJECT_WRATH_CLASSIC
 local DA = LibStub("AceAddon-3.0"):GetAddon("Skillet") -- for DebugAids.lua
 --[[
 Skillet: A tradeskill window replacement.
@@ -200,6 +200,7 @@ function Skillet:RestoreEnchantButton(show)
 end
 
 function Skillet:EnablePauseButton()
+	DA.DEBUG(0,"EnablePauseButton()")
 	if not self.isCraft then
 		SkilletStartQueueButton:Hide()
 		SkilletPauseQueueButton:Show()
@@ -208,9 +209,10 @@ function Skillet:EnablePauseButton()
 end
 
 function Skillet:DisablePauseButton()
+	DA.DEBUG(0,"DisablePauseButton()")
 	if not self.isCraft then
-		SkilletStartQueueButton:Show()
 		SkilletPauseQueueButton:Hide()
+		SkilletStartQueueButton:Show()
 	end
 end
 
@@ -255,15 +257,19 @@ function Skillet:CreateTradeSkillWindow()
 	local titlebar2 = frame:CreateTexture(nil,"BACKGROUND")
 	titlebar:SetPoint("TOPLEFT",frame,"TOPLEFT",3,-4)
 	titlebar:SetPoint("TOPRIGHT",frame,"TOPRIGHT",-3,-4)
+	titlebar:SetColorTexture(r,g,b,1)
 	titlebar:SetHeight(13)
 	titlebar2:SetPoint("TOPLEFT",titlebar,"BOTTOMLEFT",0,0)
 	titlebar2:SetPoint("TOPRIGHT",titlebar,"BOTTOMRIGHT",0,0)
-	titlebar2:SetHeight(13)
-	titlebar:SetGradientAlpha("VERTICAL",r*0.6,g*0.6,b*0.6,1,r,g,b,1)
-	titlebar:SetColorTexture(r,g,b,1)
-	titlebar2:SetGradientAlpha("VERTICAL",r*0.9,g*0.9,b*0.9,1,r*0.6,g*0.6,b*0.6,1)
 	titlebar2:SetColorTexture(r,g,b,1)
-
+	titlebar2:SetHeight(13)
+	if isClassic then
+		titlebar:SetGradientAlpha("VERTICAL",r*0.6,g*0.6,b*0.6,1,r,g,b,1)
+		titlebar2:SetGradientAlpha("VERTICAL",r*0.9,g*0.9,b*0.9,1,r*0.6,g*0.6,b*0.6,1)
+	else
+		titlebar:SetGradient("VERTICAL", CreateColor(r*0.6,g*0.6,b*0.6,1), CreateColor(r,g,b,1))
+		titlebar2:SetGradient("VERTICAL", CreateColor(r*0.9,g*0.9,b*0.9,1), CreateColor(r*0.6,g*0.6,b*0.6,1))
+	end
 	local title = CreateFrame("Frame",nil,frame)
 	title:SetPoint("TOPLEFT",titlebar,"TOPLEFT",0,0)
 	title:SetPoint("BOTTOMRIGHT",titlebar2,"BOTTOMRIGHT",0,0)
@@ -456,7 +462,7 @@ function Skillet:ResetTradeSkillWindow()
 			local button = buttons[i]
 			if button then
 				button:ClearAllPoints()
-				button:SetParent("SkilletFrame")
+				button:SetParent(SkilletFrame)
 				button:SetPoint("TOPLEFT", last_button, "BOTTOMLEFT", 0, -1)
 				button:Hide()
 				button:SetAlpha(0)
@@ -561,6 +567,9 @@ end
 function Skillet:ConfigureRecipeControls()
 	DA.DEBUG(0,"ConfigureRecipeControls()")
 	--DA.DEBUG(1,"ConfigureRecipeControls: build= "..tostring(Skillet.build)..", currentTrade= "..tostring(Skillet.currentTrade))
+	if self.queueCasting then
+		return
+	end
 	if Skillet.isCraft then
 		if Skillet.db.profile.queue_crafts then
 			SkilletQueueButton:Show()
@@ -618,6 +627,7 @@ function Skillet:ConfigureRecipeControls()
 		SkilletCreateAllButton:Show()
 		SkilletCreateButton:Show()
 		SkilletQueueParent:Show()
+		SkilletPauseQueueButton:Hide()
 		SkilletStartQueueButton:Show()
 		SkilletEmptyQueueButton:Show()
 		SkilletItemCountInputBox:Show()
@@ -683,11 +693,13 @@ function Skillet:TradeButton_OnEnter(button)
 end
 
 function Skillet:TradeButtonAdditional_OnEnter(button)
+	--DA.DEBUG(0,"TradeButtonAdditional_OnEnter("..tostring(button)..")")
+	--DA.DEBUG(1,"TradeButtonAdditional_OnEnter: button= "..DA.DUMP1(button))
 	GameTooltip:SetOwner(button, "ANCHOR_TOPLEFT")
 	GameTooltip:ClearLines()
 	local spellID = button:GetID()
 	GameTooltip:AddLine(GetSpellInfo(spellID))
-	local itemID = Skillet:GetAutoTargetItem(spellID)
+	local itemID = Skillet:GetAutoTargetItem(self.currentTrade, spellID)
 	if itemID and IsAltKeyDown() then
 		GameTooltip:AddLine("/use "..GetItemInfo(itemID))
 	end
@@ -695,6 +707,7 @@ function Skillet:TradeButtonAdditional_OnEnter(button)
 end
 
 function Skillet:TradeButton_OnClick(this,button)
+	--DA.DEBUG(0,"TradeButton_OnClick("..DA.DUMP1(this)..", "..tostring(button)..")")
 	local name = this:GetName()
 	local _, player, tradeID = string.split("-", name)
 	tradeID = tonumber(tradeID)
@@ -726,8 +739,15 @@ function Skillet:TradeButton_OnClick(this,button)
 	GameTooltip:Hide()
 end
 
+function Skillet:TradeButtonAdditional_OnClick(this,button)
+	DA.DEBUG(0,"TradeButtonAdditional_OnClick("..DA.DUMP1(this)..", "..tostring(button)..")")
+	local name = this:GetName()
+	DA.DEBUG(0,"TradeButtonAdditional_OnClick: name= "..tostring(name))
+	GameTooltip:Hide()
+end
+
 function Skillet:CreateAdditionalButtonsList()
-	DA.DEBUG(3,"CreateAdditionalButtonsList()")
+	--DA.DEBUG(0,"CreateAdditionalButtonsList()")
 	Skillet.AdditionalButtonsList = {}
 	local seenButtons = {}
 	local tradeSkillList = self.tradeSkillList
@@ -743,11 +763,12 @@ function Skillet:CreateAdditionalButtonsList()
 					table.insert(Skillet.AdditionalButtonsList, additionalSpellTab)
 					seenButtons[spellID] = true
 				end
-			end
+			end		-- additionalSpellTab
 		else
 			--DA.DEBUG(3,"tradeID= "..tostring(tradeID).." has no ranks")
-		end
+		end		-- ranks
 	end		-- for
+	--DA.DEBUG(0,"CreateAdditionalButtonsList: AdditionalButtonsList= "..DA.DUMP(Skillet.AdditionalButtonsList))
 end
 
 function Skillet:UpdateTradeButtons(player)
@@ -776,7 +797,7 @@ function Skillet:UpdateTradeButtons(player)
 			end
 		end
 		--DA.DEBUG(3,"tradeLink= "..tostring(tradeLink))
-		if ranks and tradeID ~= MINING then
+		if self:IsSupportedTradeskill(tradeID) and ranks and tradeID ~= MINING then
 			local spellName, _, spellIcon = GetSpellInfo(tradeID)
 			if tradeID == SMELTING then
 				spellName = GetSpellInfo(MINING)
@@ -829,8 +850,12 @@ function Skillet:UpdateTradeButtons(player)
 		self:CreateAdditionalButtonsList()
 	end
 --
--- Iterate thru the list of additional skills and
--- add buttons for each one
+-- Iterate thru the list of additional skills and add buttons for each one
+--
+-- Each entry is {spellID, "Name", isToy, isPet, isKnown}
+--   isToy is true if the spellID is a toyID instead
+--   isPet is true if the name is a pet
+--   isKnown is true if the spellID must be known by the player.
 --
 	for i=1,#Skillet.AdditionalButtonsList,1 do
 		local additionalSpellTab = Skillet.AdditionalButtonsList[i]
@@ -919,7 +944,7 @@ function Skillet:UpdateTradeSkillWindow()
 		self.dataScanned = self:RescanTrade()
 		self:SortAndFilterRecipes()
 	end
-	if not self.data.sortedSkillList[skillListKey] then
+	if not self.data.sortedSkillList or not self.data.sortedSkillList[skillListKey] then
 		numTradeSkills = self:SortAndFilterRecipes()
 		if not numTradeSkills or numTradeSkills < 1 then
 			numTradeSkills = 0
@@ -1313,7 +1338,7 @@ function Skillet:UpdateTradeSkillWindow()
 		SkilletFrameEmptySpace:SetPoint("TOPLEFT",SkilletSkillListParent,"TOPLEFT")
 	end
 	SkilletFrameEmptySpace:SetPoint("BOTTOMRIGHT",SkilletSkillListParent,"BOTTOMRIGHT")
-	--DA.DEBUG(3,"UpdateTradeSkillWindow Complete")
+	DA.DEBUG(3,"UpdateTradeSkillWindow Complete")
 end
 
 --
@@ -1580,7 +1605,7 @@ end
 -- Sets the game tooltip item to the selected skill
 --
 function Skillet:SetTradeSkillToolTip(skillIndex, buttonID)
-	--DA.DEBUG(2,"SetTradeSkillToolTip("..tostring(skillIndex)..", "..tostring(buttonID)..")")
+	--DA.DEBUG(0,"SetTradeSkillToolTip("..tostring(skillIndex)..", "..tostring(buttonID)..")")
 	GameTooltip:ClearLines()
 	if Skillet.db.profile.scale_tooltip then
 		local uiScale = 1.0;
@@ -1604,8 +1629,10 @@ function Skillet:SetTradeSkillToolTip(skillIndex, buttonID)
 		if Skillet.db.profile.enchant_scrolls and recipe.scrollID then
 			GameTooltip:SetItemByID(recipe.scrollID)
 		else
-			GameTooltip:AddLine(GetTradeSkillDescription(skillIndex))
+			GameTooltip:AddLine(GetTradeSkillDescription(skillIndex),NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, true)
 		end
+	elseif recipe.itemID == 0 then
+		GameTooltip:AddLine(GetTradeSkillDescription(skillIndex),NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, true)
 	else
 		if recipe then
 			if recipe.itemID ~= 0 then
@@ -1659,6 +1686,13 @@ function Skillet:SetReagentToolTip(reagentID, numNeeded, numCraftable)
 				end
 			end
 		end
+	end
+	local server = self.data.server or 0
+	local customPrice = self.db.global.customPrice[server]
+	if customPrice and customPrice[reagentID] then
+		local price = customPrice[reagentID].value
+		local text = self:FormatMoneyFull(price,true)
+		GameTooltip:AddDoubleLine("Custom Price: ",text,0,1,0,1,1,1)
 	end
 	local inBoth = self:GetInventory(self.currentPlayer, reagentID)
 	local surplus = inBoth - numNeeded * numCraftable
@@ -1774,7 +1808,7 @@ function Skillet:UpdateDetailsWindow(skillIndex)
 -- Fill the skill level bar
 --
 		if recipe.itemID and recipe.spellID then
-			--DA.DEBUG(0,"UpdateDetailsWindow: itemID= "..tostring(recipe.itemID)..", spellID= "..tostring(recipe.spellID))
+			--DA.DEBUG(1,"UpdateDetailsWindow: itemID= "..tostring(recipe.itemID)..", spellID= "..tostring(recipe.spellID))
 			local orange,yellow,green,gray = self:GetTradeSkillLevels(recipe.itemID, recipe.spellID)
 --
 -- Save the actual values
@@ -1800,16 +1834,14 @@ function Skillet:UpdateDetailsWindow(skillIndex)
 -- Whether or not it is on cooldown.
 --
 		SkilletSkillCooldown:SetText("")
-		if not Skillet.isCraft then
-			local cooldown = GetTradeSkillCooldown(skillIndex)
-			if cooldown and cooldown > 0 then
-				SkilletSkillCooldown:SetText(COOLDOWN_REMAINING.." "..SecondsToTime(cooldown))
-			end
+		local cooldown
+		if Skillet.isCraft then
+			cooldown = GetCraftCooldown(skillIndex)
 		else
-			local cooldown = GetCraftCooldown(skillIndex)
-			if cooldown and cooldown > 0 then
-				SkilletSkillCooldown:SetText(COOLDOWN_REMAINING.." "..SecondsToTime(cooldown))
-			end
+			cooldown = GetTradeSkillCooldown(skillIndex)
+		end
+		if cooldown and cooldown > 0 then
+			SkilletSkillCooldown:SetText(COOLDOWN_REMAINING.." "..SecondsToTime(cooldown))
 		end
 	else
 		recipe = Skillet.unknownRecipe
@@ -1836,16 +1868,24 @@ function Skillet:UpdateDetailsWindow(skillIndex)
 -- Get the icon
 --
 	if Skillet.isCraft then
+		--DA.DEBUG(1,"UpdateDetailsWindow: texture from GetCraftIcon("..tostring(GetCraftIcon)..")")
 		texture = GetCraftIcon(skillIndex)
 	elseif recipe.itemID ~= 0 then
+		--DA.DEBUG(1,"UpdateDetailsWindow: texture from GetItemIcon("..tostring(recipe.itemID)..")")
 		texture = GetItemIcon(recipe.itemID)
 	elseif Skillet.db.profile.enchant_scrolls and recipe.scrollID ~= 0 then
+		--DA.DEBUG(1,"UpdateDetailsWindow: texture from GetItemIcon("..tostring(recipe.scrollID)..")")
 		texture = GetItemIcon(recipe.scrollID)
 	else
+		--DA.DEBUG(1,"UpdateDetailsWindow: texture from GetTradeSkillIcon("..tostring(GetTradeSkillIcon)..")")
 		texture = GetTradeSkillIcon(skillIndex)
 	end
-	SkilletSkillIcon:SetNormalTexture(texture)
-	SkilletSkillIcon:Show()
+	if texture then
+		SkilletSkillIcon:SetNormalTexture(texture)
+		SkilletSkillIcon:Show()
+	else
+		SkilletSkillIcon:Hide()
+	end
 --
 -- Check for Auction House
 --
@@ -3374,20 +3414,27 @@ function Skillet:CreateStandaloneQueueFrame()
 	end
 	frame:SetBackdrop(FrameBackdrop);
 	frame:SetBackdropColor(0.1, 0.1, 0.1)
-	-- A title bar stolen from the Ace2 Waterfall window.
+--
+-- A title bar stolen from the Ace2 Waterfall window.
+--
 	local r,g,b = 0, 0.7, 0; -- dark green
 	local titlebar = frame:CreateTexture(nil,"BACKGROUND")
 	local titlebar2 = frame:CreateTexture(nil,"BACKGROUND")
 	titlebar:SetPoint("TOPLEFT",frame,"TOPLEFT",3,-4)
 	titlebar:SetPoint("TOPRIGHT",frame,"TOPRIGHT",-3,-4)
+	titlebar:SetColorTexture(r,g,b,1)
 	titlebar:SetHeight(13)
 	titlebar2:SetPoint("TOPLEFT",titlebar,"BOTTOMLEFT",0,0)
 	titlebar2:SetPoint("TOPRIGHT",titlebar,"BOTTOMRIGHT",0,0)
-	titlebar2:SetHeight(13)
-	titlebar:SetGradientAlpha("VERTICAL",r*0.6,g*0.6,b*0.6,1,r,g,b,1)
-	titlebar:SetColorTexture(r,g,b,1)
-	titlebar2:SetGradientAlpha("VERTICAL",r*0.9,g*0.9,b*0.9,1,r*0.6,g*0.6,b*0.6,1)
 	titlebar2:SetColorTexture(r,g,b,1)
+	titlebar2:SetHeight(13)
+	if isClassic then
+		titlebar:SetGradientAlpha("VERTICAL",r*0.6,g*0.6,b*0.6,1,r,g,b,1)
+		titlebar2:SetGradientAlpha("VERTICAL",r*0.9,g*0.9,b*0.9,1,r*0.6,g*0.6,b*0.6,1)
+	else
+		titlebar:SetGradient("VERTICAL", CreateColor(r*0.6,g*0.6,b*0.6,1), CreateColor(r,g,b,1))
+		titlebar2:SetGradient("VERTICAL", CreateColor(r*0.9,g*0.9,b*0.9,1), CreateColor(r*0.6,g*0.6,b*0.6,1))
+	end
 	local title = CreateFrame("Frame",nil,frame)
 	title:SetPoint("TOPLEFT",titlebar,"TOPLEFT",0,0)
 	title:SetPoint("BOTTOMRIGHT",titlebar2,"BOTTOMRIGHT",0,0)

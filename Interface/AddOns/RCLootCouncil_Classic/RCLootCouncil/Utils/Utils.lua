@@ -110,7 +110,7 @@ end
 function Utils:GetNumFreeBagSlots()
    local result = 0
    for i = 1, _G.NUM_BAG_SLOTS do
-      result = result + (GetContainerNumFreeSlots(i))
+      result = result + (addon.C_Container.GetContainerNumFreeSlots(i))
    end
    return result
 end
@@ -157,8 +157,11 @@ function Utils:CheckOutdatedVersion (baseVersion, newVersion, basetVersion, newt
 
    if strfind(newVersion, "%a+") then return self:Debug("Someone's tampering with version?", newVersion) end
 
-   if addon:VersionCompare(baseVersion,newVersion) and (not (basetVersion or newtVersion)) then
-		return addon.VER_CHECK_CODES[2] -- Outdated
+   if newtVersion and not basetVersion then
+      return addon.VER_CHECK_CODES[1] -- Don't treat test versions as the latest
+
+   elseif addon:VersionCompare(baseVersion, newVersion) then
+      return addon.VER_CHECK_CODES[2] -- Outdated
 
 	elseif basetVersion and newtVersion and basetVersion < newtVersion then
 		return addon.VER_CHECK_CODES[3] -- tVersion outdated
