@@ -1,5 +1,0 @@
-<Bindings>
-  <Binding name="SLoTe" description="On/Off Function" header="ScrollingLootText">
-    SLT_Command();
-  </Binding>
-</Bindings>
